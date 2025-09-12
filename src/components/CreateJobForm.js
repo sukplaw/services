@@ -1,0 +1,2461 @@
+import React, { useEffect } from "react";
+import {
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Table,
+  InputNumber,
+  message,
+  Upload
+} from "antd";
+import Button from "react-bootstrap/Button";
+import { MdOutlineWorkOutline } from "react-icons/md";
+import { MdOutlineDescription } from "react-icons/md";
+import { FaRegSave } from "react-icons/fa";
+import { LiaUserEditSolid } from "react-icons/lia";
+import { MdOutlineEmail } from "react-icons/md";
+import { GrDatabase } from "react-icons/gr";
+import Modal from "react-bootstrap/Modal";
+import { IoMdCheckmarkCircle } from "react-icons/io";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
+import buddhistEra from "dayjs/plugin/buddhistEra";
+import "dayjs/locale/th";
+import locale from "antd/es/date-picker/locale/th_TH";
+import axios from "axios";
+import { IoSearch } from "react-icons/io5";
+import { FaUserPlus } from "react-icons/fa";
+import { MdProductionQuantityLimits } from "react-icons/md";
+import { FiHome } from "react-icons/fi";
+import { IoMdCloseCircle } from "react-icons/io";
+
+
+const { Dragger } = Upload;
+dayjs.extend(buddhistEra);
+dayjs.locale("th");
+export default function CreateJobForm() {
+  // const [form] = Form.useForm();
+  const [formCustomer] = Form.useForm();
+  const [formProduct] = Form.useForm();
+
+  const [dataProduct, setDataProduct] = useState([]);
+  const [dataCustomer, setDataCustomer] = useState([]);
+
+  const [openProductModal, setOpenProductModal] = useState(false);
+
+  const [openModalJob, setOpenModalJob] = useState(false);
+
+  const [openModalCustomer, setOpenModalCustomer] = useState(false);
+
+  const [searchCustomer, setSearchCustomer] = useState("");
+  const [searchProduct, setSearchProduct] = useState("");
+
+  const [selectedDataProduct, setSelectedDataProduct] = useState(null);
+  const [selectedDataCustomer, setSelectedDataCustomer] = useState(null);
+  const [isFormProductDisabled, setIsFormProductDisabled] = useState(true);
+  const [isFormCustomerDisabled, setIsFormCustomerDisabled] = useState(true);
+
+  const [isGenerated, setIsGenerated] = useState(false);
+
+  const [selectedItems, setSelectedItems] = useState([]);
+
+  const [openModalJobError, setOpenModalJobError] = useState(false);
+  const [uploadedUrls, setUploadedUrls] = useState([]);
+  const [fileList, setFileList] = useState([]);
+
+
+  function showStatus() {
+    let status = "เริ่มงาน";
+    console.log("สถานะภายในฟังก์ชัน:", status);
+    return status;
+  }
+  showStatus();
+
+  const showModalJob = () => {
+    // console.log("showModalJob");
+    setOpenModalJob(true);
+  };
+  const handleCloseJob = () => {
+    setOpenModalJob(false);
+  };
+
+  const showProductModal = () => {
+    setOpenProductModal(true);
+  };
+  const handleCloseProductModal = () => {
+    setOpenProductModal(false);
+  };
+
+  const handleCloseCustomerModal = () => {
+    setOpenModalCustomer(false);
+  };
+  const navigate = useNavigate();
+
+  const handletoJob = () => {
+    navigate("/job");
+  };
+
+  const toCreateProduct = () => {
+    navigate("/create-product");
+  };
+
+  const toCreateCustomer = () => {
+    navigate("/create-customer");
+  };
+
+  const getDataProduct = () => {
+    const url = "http://localhost:3302/get-product";
+    axios
+      .get(url)
+      .then((res) => {
+        setDataProduct(res.data);
+        console.log(res.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching product data:", error);
+      });
+  };
+
+  const getDataCustomer = () => {
+    const url = "http://localhost:3302/get-customer";
+    axios
+      .get(url)
+      .then((res) => {
+        setDataCustomer(res.data);
+        setSelectedDataProduct(res.data[0]);
+        console.log(res.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching customer data:", error);
+      });
+  };
+
+  // const createJob = (data) => {
+  //   const url = "http://localhost:3302/create-job";
+  //   axios
+  //     .post(url, data)
+  //     .then((res) => {
+  //       setDataCustomer(res.data);
+  //       console.log("Job created successfully:", res.data);
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error creating job:", error);
+  //     });
+  // };
+
+  // const createJob = (data) => {
+  //   const url = "http://localhost:3302/create-job";
+  //   axios
+  //     .post(url, data)
+  //     .then((res) => {
+  //       // แสดงข้อความเมื่อส่งข้อมูลสำเร็จ
+  //       message.success("บันทึกงานใหม่สำเร็จ!");
+  //       console.log("Job created successfully:", res.data);
+
+  //       // ล้างข้อมูลในฟอร์มหลังจากส่งสำเร็จ
+  //       formProduct.resetFields();
+  //       formCustomer.resetFields();
+  //     })
+  //     .catch((error) => {
+  //       // แสดงข้อความเมื่อเกิดข้อผิดพลาด
+  //       message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
+  //       console.error("Error creating job:", error);
+  //     });
+  // };
+
+  const createJob = (data) => {
+    const url = "http://localhost:3302/create-job";
+    axios
+      .post(url, data)
+      .then((res) => {
+        message.success("บันทึกงานใหม่สำเร็จ!");
+        console.log("Job created successfully:", res.data);
+
+        formProduct.resetFields();
+        formCustomer.resetFields();
+
+        setOpenModalJob(true); // ✅ เปิดโมดัล “สำเร็จ”
+      })
+      .catch((error) => {
+        message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
+        console.error("Error creating job:", error);
+
+        setOpenModalJobError(true); // ❌ เปิดโมดัล “ไม่สำเร็จ”
+      });
+  };
+
+  // ✅ ดึงค่าทุกอย่างจาก formProduct (รวม URL ที่ set ไว้)
+  const onFinish = (values) => {
+    console.log("test")
+    const serviceRef = localStorage.getItem("serviceRef") || sessionStorage.getItem("serviceRef");
+    console.log("🧪 serviceRef ที่ดึงจาก localStorage/sessionStorage:", serviceRef);
+
+    const jobData = {
+      ...values,
+      imageUrls: uploadedUrls,
+      serviceRef,
+    };
+
+    createJob(jobData);
+  };
+  // const onFinish = (values) => {
+  //   if (!values.claimImage || values.claimImage.length === 0) {
+  //     message.error("กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป");
+  //     return;
+  //   }
+
+  //   const jobData = {
+  //     ...values,
+  //     imageUrls: uploadedUrls,
+  //     serviceRef: localStorage.getItem("serviceRef") || sessionStorage.getItem("serviceRef"), // ✅ เพิ่มบรรทัดนี้
+  //     // claimImage: JSON.stringify(values.claimImage),
+  //   }
+  //   console.log("🚀 ส่ง jobData ไป backend:", jobData); // ✅ ดูว่า serviceRef มีมั้ย
+  //   createJob(jobData);
+  // };
+
+
+  useEffect(() => {
+    getDataProduct();
+    getDataCustomer();
+    showStatus();
+  }, []);
+
+  useEffect(() => {
+    // Logic ของ useEffect ที่สอง
+    if (selectedDataProduct) {
+      formProduct.setFieldsValue({
+        product_name: selectedDataProduct.product_name,
+        productRef: selectedDataProduct.productRef,
+        sku: selectedDataProduct.sku,
+        brand: selectedDataProduct.brand,
+        pcs: selectedDataProduct.pcs,
+        category: selectedDataProduct.category,
+        description: selectedDataProduct.description,
+      });
+      setIsFormProductDisabled(true);
+    } else {
+      // ถ้าไม่มีข้อมูลสินค้าถูกเลือก ให้ reset ฟอร์มและสร้าง Job ID
+      setIsFormProductDisabled(false);
+      formProduct.resetFields();
+
+      // Logic ของ useEffect ตัวแรก
+      const generateJobId = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
+        const datePrefix = `${year}${month}${day}`;
+
+        const lastGeneratedData = JSON.parse(
+          localStorage.getItem("lastGeneratedJob")
+        );
+        let sequenceNumber = 1;
+        if (lastGeneratedData && lastGeneratedData.date === datePrefix) {
+          sequenceNumber = lastGeneratedData.sequence + 1;
+        }
+        const formattedSequence = String(sequenceNumber).padStart(3, "0");
+
+        const newJobId = `JOB${datePrefix}${formattedSequence}`;
+
+        const newLastGeneratedData = {
+          date: datePrefix,
+          sequence: sequenceNumber,
+        };
+        localStorage.setItem(
+          "lastGeneratedJob",
+          JSON.stringify(newLastGeneratedData)
+        );
+
+        formProduct.setFieldsValue({ jobRef: newJobId });
+        setIsGenerated(true);
+      };
+
+      generateJobId();
+    }
+  }, [selectedDataProduct, formProduct]);
+
+  // useEffect(() => {
+  //   const generateJobId = () => {
+  //     const today = new Date();
+  //     const year = today.getFullYear();
+  //     const month = String(today.getMonth() + 1).padStart(2, "0");
+  //     const day = String(today.getDate()).padStart(2, "0");
+  //     const datePrefix = `${year}${month}${day}`;
+
+  //     const lastGeneratedData = JSON.parse(
+  //       localStorage.getItem("lastGeneratedJob")
+  //     );
+  //     let sequenceNumber = 1;
+
+  //     if (lastGeneratedData && lastGeneratedData.date === datePrefix) {
+  //       sequenceNumber = lastGeneratedData.sequence + 1;
+  //     }
+
+  //     // 4. จัดรูปแบบเลขลำดับให้มี 3 หลัก
+  //     const formattedSequence = String(sequenceNumber).padStart(3, "0");
+
+  //     // 5. สร้างหมายเลข Job ID ใหม่
+  //     const newJobId = `JOB${datePrefix}${formattedSequence}`;
+
+  //     // 6. บันทึกข้อมูลเลขลำดับล่าสุดลงใน localStorage
+  //     const newLastGeneratedData = {
+  //       date: datePrefix,
+  //       sequence: sequenceNumber,
+  //     };
+  //     localStorage.setItem(
+  //       "lastGeneratedJob",
+  //       JSON.stringify(newLastGeneratedData)
+  //     );
+
+  //     // 7. กำหนดค่าลงในฟอร์ม
+  //     form.setFieldsValue({
+  //       jobRef: newJobId,
+  //     });
+  //     setIsGenerated(true);
+  //   };
+
+  //   // เรียกฟังก์ชันสร้างเลข Job ทันทีที่หน้าเว็บถูกเปิด
+  //   // ตรวจสอบเพื่อไม่ให้สร้างซ้ำซ้อนถ้ามีการ re-render
+  //   if (!isGenerated) {
+  //     generateJobId();
+  //   }
+  // }, [form, isGenerated]);
+
+  // useEffect(() => {
+  //   if (selectedDataProduct) {
+  //     form.setFieldsValue({
+  //       product_name: selectedDataProduct.product_name,
+  //       sku: selectedDataProduct.sku,
+  //       brand: selectedDataProduct.brand,
+  //       pcs: selectedDataProduct.pcs,
+  //       description: selectedDataProduct.description,
+  //     });
+  //   }
+  // }, [selectedDataProduct, form]);
+
+  // useEffect(() => {
+  //   if (selectedDataProduct) {
+  //     form.setFieldsValue({
+  //       product_name: selectedDataProduct.product_name,
+  //       sku: selectedDataProduct.sku,
+  //       brand: selectedDataProduct.brand,
+  //       pcs: selectedDataProduct.pcs,
+  //       description: selectedDataProduct.description,
+  //     });
+  //     setIsFormProductDisabled(true);
+  //   } else {
+  //     setIsFormProductDisabled(false);
+  //     form.resetFields();
+  //   }
+  // }, [selectedDataProduct, form]);
+
+  useEffect(() => {
+    if (selectedDataCustomer) {
+      formCustomer.setFieldsValue({
+        customerRef: selectedDataCustomer.customerRef,
+        customer_firstname: selectedDataCustomer.customer_firstname,
+        customer_lastname: selectedDataCustomer.customer_lastname,
+        customer_old: selectedDataCustomer.customer_old,
+        username: selectedDataCustomer.username,
+        email: selectedDataCustomer.email,
+        line_id: selectedDataCustomer.line_id,
+        phone: selectedDataCustomer.phone,
+        address: selectedDataCustomer.address,
+      });
+      setIsFormCustomerDisabled(true);
+    } else {
+      setIsFormCustomerDisabled(false);
+      formCustomer.resetFields();
+    }
+  }, [selectedDataCustomer, formCustomer]);
+
+  const handleRowProduct = (record) => {
+    if (
+      selectedDataProduct &&
+      selectedDataProduct.product_id === record.product_id
+    ) {
+      setSelectedDataProduct(null);
+    } else {
+      setSelectedDataProduct(record);
+    }
+  };
+
+  const handleRowCustomer = (record) => {
+    if (
+      selectedDataCustomer &&
+      selectedDataCustomer.customer_id === record.customer_id
+    ) {
+      setSelectedDataCustomer(null);
+    } else {
+      setSelectedDataCustomer(record);
+    }
+  };
+
+  const columns = [
+    {
+      title: "ชื่อสินค้า",
+      dataIndex: "product_name",
+      key: "product_name",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.product_name.localeCompare(b.product_name),
+    },
+    {
+      title: "แบรนด์",
+      dataIndex: "brand",
+      key: "brand",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.brand.localeCompare(b.brand),
+    },
+    {
+      title: "SKU",
+      dataIndex: "sku",
+      key: "sku",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.sku.localeCompare(b.sku),
+    },
+  ];
+
+  const columnsCustomer = [
+    {
+      title: "รหัสลูกค้า",
+      dataIndex: "customerRef",
+      key: "customerRef",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.customerRef.localeCompare(b.customerRef),
+    },
+    {
+      title: "ชื่อ",
+      dataIndex: "customer_firstname",
+      key: "customer_firstname",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) =>
+        a.customer_firstname.localeCompare(b.customer_firstname),
+    },
+    {
+      title: "นามสกุล",
+      dataIndex: "customer_lastname",
+      key: "customer_lastname",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.customer_lastname.localeCompare(b.customer_lastname),
+    },
+    {
+      title: "Username",
+      dataIndex: "username",
+      key: "username",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.username.localeCompare(b.username),
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.email.localeCompare(b.email),
+    },
+    {
+      title: "Line id",
+      dataIndex: "line_id",
+      key: "line_id",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.line_id.localeCompare(b.line_id),
+    },
+    {
+      title: "เบอร์โทรศัพท์",
+      dataIndex: "phone",
+      key: "phone",
+      render: (text) => <a>{text}</a>,
+      sorter: (a, b) => a.phone.localeCompare(b.phone),
+    },
+  ];
+
+  const filterDataByProduct = dataProduct.filter(
+    (item) =>
+      item.product_name.toLowerCase().includes(searchProduct.toLowerCase()) ||
+      item.brand.toLowerCase().includes(searchProduct.toLocaleLowerCase()) ||
+      item.sku.toLowerCase().includes(searchProduct.toLocaleLowerCase())
+  );
+
+  const filterDataByCustomer = dataCustomer.filter((customer) => {
+    const fields = [
+      "customerRef",
+      "customer_firstname",
+      "customer_lastname",
+      "username",
+      "email",
+      "line_id",
+      "phone",
+    ];
+    return fields.some((field) => {
+      const fieldValue = customer[field];
+      return (
+        typeof fieldValue === "string" &&
+        fieldValue.toLowerCase().includes(searchCustomer.toLowerCase())
+      );
+    });
+  });
+
+  const disableDatePass = (current) => {
+    return current && current < dayjs().endOf("day");
+    // const today = dayjs();
+    //   return current && current.isBefore(today, 'day');
+  };
+
+  const handleDateChange = (date) => {
+    if (date) {
+      const today = dayjs();
+      const duration = date.diff(today, "day");
+      formProduct.setFieldsValue({
+        repair_duration: duration + 1,
+      });
+    } else {
+      formProduct.setFieldsValue({
+        repair_duration: null,
+      });
+    }
+  };
+
+const handleCombinedSubmit = async () => {
+  try {
+    const productValues = await formProduct.validateFields();
+    const customerValues = await formCustomer.validateFields();
+    const serviceRef = localStorage.getItem("serviceRef") || sessionStorage.getItem("serviceRef");
+    console.log("serviceRef จาก localStorage/sessionStorage:", serviceRef);
+
+    const combinedData = { ...productValues, ...customerValues };
+
+    if (combinedData.expected_completion_date) {
+      combinedData.expected_completion_date = dayjs(
+        combinedData.expected_completion_date
+      ).format("YYYY-MM-DD HH:mm:ss");
+    }
+
+    combinedData.serviceRef = serviceRef; // เพิ่มบรรทัดนี้
+
+    combinedData.items = [
+      {
+        jobRef: combinedData.jobRef,
+        productRef: combinedData.productRef,
+        serialNumber: combinedData.serialNumber,
+        pcs: combinedData.pcs,
+        unit: combinedData.unit,
+        jobStatus: combinedData.jobStatus,
+        serviceRef: serviceRef // ใช้ค่าที่ดึงมาโดยตรง
+      },
+    ];
+
+    console.log("ข้อมูลที่ถูกรวมและแปลงแล้วก่อนส่ง API:", combinedData);
+    createJob(combinedData);
+  } catch (errorInfo) {
+    console.error("Validation Failed:", errorInfo);
+    message.warning("กรุณาตรวจสอบข้อมูลที่ยังไม่ครบถ้วน");
+    setOpenModalJobError(true);
+  }
+};
+
+
+  const normFile = (e) => {
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e?.fileList;
+  };
+
+  const uploadProps = {
+    name: "imageFile",
+    multiple: true,
+    action: "http://localhost:3303/upload",
+    listType: "picture",
+    fileList: fileList, // ✅ ให้ Upload ใช้ fileList จาก state
+
+    onChange(info) {
+      const newFileList = info.fileList;
+
+      // ✅ filter เฉพาะรูปที่อัปโหลดสำเร็จ และมี URL
+      const uploadedUrls = newFileList
+        .filter(file => file.status === "done")
+        .map(file => file.response?.url || file.url) // response.url สำหรับใหม่, file.url สำหรับที่ลบแล้วแต่อยาก preview
+        .filter(Boolean);
+
+      // ✅ อัปเดต form ด้วย URL ล่าสุด
+      formProduct.setFieldsValue({ claimImage: uploadedUrls });
+
+      // ✅ อัปเดต fileList
+      setFileList(newFileList);
+    },
+
+    // ✅ ฟังก์ชันลบรูป (อัปเดต fileList และ form ด้วย)
+    onRemove(file) {
+      const newFileList = fileList.filter(f => f.uid !== file.uid);
+      setFileList(newFileList);
+
+      const uploadedUrls = newFileList
+        .filter(file => file.status === "done")
+        .map(file => file.response?.url || file.url)
+        .filter(Boolean);
+
+      formProduct.setFieldsValue({ claimImage: uploadedUrls });
+    },
+  };
+
+
+  ////propของ dragger เพิ่ม setFieldsValue
+  // const uploadProps = {
+  //   name: "imageFile",
+  //   multiple: true,
+  //   action: "http://localhost:3303/upload",
+  //   listType: "picture",
+  //   fileList: fileList,
+  //   onChange(info) {
+  //     const { status } = info.file;
+  //     if (status !== "uploading") {
+  //       console.log(info.file, info.fileList);
+  //     }
+  //     if (status === "done") {
+  //       message.success(`${info.file.name} อัปโหลดสำเร็จ.`);
+
+  //       const uploadedUrls = info.fileList
+  //         .filter(file => file.status === "done")
+  //         .map(file => file.response?.url)
+  //         .filter(Boolean)
+  //       // const imageUrl = info.file.response.url;
+  //       // console.log("URL ของรูปภาพ:", imageUrl);
+
+  //       // ✅ เก็บค่า URL รูปไว้ใน formProduct
+  //       formProduct.setFieldsValue({ claimImage:uploadedUrls });
+  //     } else if (status === "error") {
+  //       message.error(`${info.file.name} อัปโหลดไม่สำเร็จ.`);
+  //     }
+  //   },
+  // };
+
+  // const uploadProps = {
+  //     name: "imageFile",
+  //     multiple: false,
+  //     action: "http://localhost:3303/upload",
+  //     listType: "picture",
+  //     onChange(info) {
+  //       const { status } = info.file;
+  //       if (status !== "uploading") {
+  //         console.log(info.file, info.fileList);
+  //       }
+  //       if (status === "done") {
+  //         message.success(`${info.file.name} อัปโหลดสำเร็จ.`);
+
+  //         const imageUrl = info.file.response.url;
+  //         console.log("URL ของรูปภาพ:", imageUrl);
+  //       } else if (status === "error") {
+  //         message.error(`${info.file.name} อัปโหลดไม่สำเร็จ.`);
+  //       }
+  //     },
+  //   };
+
+  // const handleCombinedSubmit = async () => {
+  //   try {
+  //     const productValues = await formProduct.validateFields();
+  //     const customerValues = await formCustomer.validateFields();
+
+  //     const combinedData = {
+  //       ...productValues,
+  //       ...customerValues,
+  //     };
+
+  //     if (combinedData.expected_completion_date) {
+  //       combinedData.expected_completion_date = dayjs(
+  //         combinedData.expected_completion_date
+  //       ).format("YYYY-MM-DD HH:mm:ss");
+  //     }
+
+  //     combinedData.items = [
+  //       {
+  //         jobRef: combinedData.jobRef,
+  //         productRef: combinedData.productRef,
+  //         serialNumber: combinedData.serialNumber,
+  //         pcs: combinedData.pcs,
+  //         unit: combinedData.unit,
+  //         jobStatus: combinedData.jobStatus,
+  //       },
+  //     ];
+
+  //     console.log("ข้อมูลที่ถูกรวมและแปลงแล้วก่อนส่ง API:", combinedData);
+  //     createJob(combinedData);
+  //   } catch (errorInfo) {
+  //     console.error("Validation Failed:", errorInfo);
+  //     message.warning("กรุณาตรวจสอบข้อมูลที่ยังไม่ครบถ้วน");
+  //   }
+  // };
+
+  /////////////////////////เพิ่มสินค้าในรายการ///////////////////////
+  // const handleAddItem = (productId) => {
+  //   const existingItem = selectedItems.find(
+  //     (item) => item.productId === productId
+  //   );
+  //   if (existingItem) {
+  //     // ถ้าสินค้ามีอยู่แล้ว ให้เพิ่มจำนวน
+  //     setSelectedItems(
+  //       selectedItems.map((item) =>
+  //         item.productId === productId
+  //           ? { ...item, quantity: item.quantity + 1 }
+  //           : item
+  //       )
+  //     );
+  //   } else {
+  //     setSelectedItems([...selectedItems, { productId, quantity: 1 }]);
+  //   }
+  // };
+
+  return (
+    <div className="contain-main">
+      <h2 className="text-dark mb-4 mt-5 text-center">เพิ่มงานซ่อม</h2>
+
+      {/*///////////////////////////////////////////////////////////// ข้อมูลลูกค้า ///////////////////////////////////////////////////////////*/}
+
+      <div>
+        <div className="d-flex align-items-center justify-content-flex-start gap-3 mt-5 mb-4">
+          <h4>ข้อมูลลูกค้า</h4>
+          <Button
+            // style={{
+            //   color: "#213F66",
+            //   borderColor: "#213F66",
+            //   height: "59px",
+            //   fontSize: "16px",
+            // }}
+            className="d-flex align-items-center justify-content-between btn-data margin-top-100"
+            onClick={() => setOpenModalCustomer(true)}
+          >
+            <GrDatabase className="button-icon justify-content-start" />
+            <span className="d-flex justify-content-end">ฐานข้อมูลลูกค้า</span>
+          </Button>
+
+          <Button
+            className="d-flex align-items-center justify-content-between btn-table margin-top-100"
+            onClick={toCreateCustomer}
+          >
+            <FaUserPlus className="button-icon justify-content-start" />
+            <span className="d-flex justify-content-end">
+              เพิ่มข้อมูลลูกค้า
+            </span>
+          </Button>
+
+          <div>
+            <Modal show={openModalCustomer} onHide={handleCloseCustomerModal}>
+              <Modal.Body
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  flexDirection: "column",
+                }}
+              >
+                <Form.Item
+                  name="Input"
+                  rules={[{ required: true, message: "Please input!" }]}
+                >
+                  <Input
+                    onChange={(e) => setSearchCustomer(e.target.value)}
+                    prefix={
+                      <IoSearch style={{ width: "20px", height: "20px" }} />
+                    }
+                    style={{
+                      width: "399px",
+                      height: "35px",
+                      backgroundColor: "#FFFFFFFF",
+                      // borderBlock: "#000000",
+                      color: "#CCCCCC",
+                      borderRadius: "10px",
+                    }}
+                  />
+                </Form.Item>
+
+                <Table
+                  dataSource={filterDataByCustomer}
+                  columns={columnsCustomer}
+                  scroll={{ x: 450 }}
+                  style={{
+                    textAlign: "center",
+                    // width: "445px",
+                    // height: "40px",
+                  }}
+                  onRow={(record) => ({
+                    onClick: () => {
+                      handleRowCustomer(record);
+                      setOpenModalCustomer(false);
+                    },
+                  })}
+                />
+              </Modal.Body>
+            </Modal>
+          </div>
+        </div>
+        <div>
+          <Form
+            layout="vertical"
+            autoComplete="off"
+            form={formCustomer}
+            onFinish={createJob}
+            className="content-sub-form-body"
+          >
+            <Form.Item
+              name="customerRef"
+              label="รหัสลูกค้า"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size"
+            >
+              <Input
+                prefix={<LiaUserEditSolid />}
+                // disabled={isFormCustomerDisabled}
+                disabled
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="customer_firstname"
+              label="ชื่อ"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size"
+            >
+              <Input prefix={<LiaUserEditSolid />} disabled />
+            </Form.Item>
+
+            <Form.Item
+              name="customer_lastname"
+              label="นามสกุล"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size"
+            >
+              <Input
+                prefix={<LiaUserEditSolid />}
+                // disabled={isFormCustomerDisabled}
+                disabled
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="username"
+              label="Username"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size"
+            >
+              <Input
+                prefix={<LiaUserEditSolid />}
+                // disabled={isFormCustomerDisabled}
+                disabled
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="customer_old"
+              label="อายุ"
+              rules={[{ required: true }, { type: "number" }]}
+              className="form-item-custom-size"
+            >
+              <Input
+                prefix={<LiaUserEditSolid />}
+                // disabled={isFormCustomerDisabled}
+                disabled
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size"
+            >
+              <Input
+                prefix={<MdOutlineEmail />}
+                // disabled={isFormCustomerDisabled}
+                disabled
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="phone"
+              label="เบอร์โทรศัพท์"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size"
+            >
+              <Input
+                prefix={<MdOutlineEmail />}
+                // disabled={isFormCustomerDisabled}
+                disabled
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="address"
+              label="ที่อยู่"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size"
+            >
+              <Input
+                prefix={<MdOutlineEmail />}
+                // disabled={isFormCustomerDisabled}
+                disabled
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="customer_contact"
+              label="ช่องทางติดต่อ"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size mb-5"
+            >
+              <Select placeholder="กรุณาเลือกช่องทางติดต่อ">
+                <Select.Option value="phone">เบอร์โทรศัพท์</Select.Option>
+                <Select.Option value="line">Line</Select.Option>
+                <Select.Option value="address">ที่อยู่ลูกค้า</Select.Option>
+              </Select>
+            </Form.Item>
+            {/* <Form.Item
+              dependencies={["contact"]}
+              className="form-item-custom-size d-flex "
+            >
+              {({ getFieldValue }) => {
+                const contactMethod = getFieldValue("contact");
+                return (
+                  <div className="content-sub-form-body">
+                    <Form.Item
+                      name="phone"
+                      label="เบอร์โทรศัพท์"
+                      rules={[
+                        { required: contactMethod === "phone" },
+                        { type: "string" },
+                      ]}
+                      className="form-item-custom-contact "
+                    >
+                      <Input
+                        prefix={<FiPhoneCall />}
+                        disabled={contactMethod !== "phone"}
+                      />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="line"
+                      label="Line ID"
+                      rules={[
+                        { required: contactMethod === "line" },
+                        { type: "string" },
+                      ]}
+                      className="form-item-custom-contact "
+                    >
+                      <Input
+                        prefix={<FaLine />}
+                        disabled={contactMethod !== "line"}
+                      />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="address"
+                      label="ที่อยู่ลูกค้า"
+                      rules={[
+                        { required: contactMethod === "address" },
+                        { type: "string" },
+                      ]}
+                      className="form-item-custom-contact "
+                    >
+                      <Input
+                        prefix={<FiHome />}
+                        disabled={contactMethod !== "address"}
+                      />
+                    </Form.Item>
+                  </div>
+                );
+              }} */}
+            {/* </Form.Item> */}
+          </Form>
+        </div>
+        <div>
+          <div className="d-flex align-items-center justify-content-flex-start gap-3 mt-4 mb-4">
+            <h4>ข้อมูลสินค้า</h4>
+            <Button
+              className="d-flex align-items-center justify-content-between btn-data margin-top-100"
+              onClick={showProductModal}
+            >
+              <GrDatabase className="button-icon justify-content-start" />
+              <span className="d-flex justify-content-center">
+                ข้อมูลสินค้าในคลัง
+              </span>
+            </Button>
+
+            <Button
+              className="d-flex align-items-center justify-content-between btn-table margin-top-100"
+              onClick={toCreateProduct}
+            >
+              <MdProductionQuantityLimits className="button-icon justify-content-start" />
+              <span className="d-flex justify-content-end">
+                เพิ่มข้อมูลสินค้า
+              </span>
+            </Button>
+            <div>
+              <Modal show={openProductModal} onHide={handleCloseProductModal}>
+                <Modal.Body
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexDirection: "column",
+                  }}
+                >
+                  <Form.Item
+                    name="Input"
+                    rules={[{ required: true, message: "Please input!" }]}
+                  >
+                    <Input
+                      onChange={(e) => setSearchProduct(e.target.value)}
+                      prefix={
+                        <IoSearch style={{ width: "20px", height: "20px" }} />
+                      }
+                      style={{
+                        width: "399px",
+                        height: "35px",
+                        backgroundColor: "#FFFFFFFF",
+                        // borderBlock: "#000000",
+                        color: "#CCCCCC",
+                        borderRadius: "10px",
+                      }}
+                    />
+                  </Form.Item>
+
+                  <Table
+                    dataSource={filterDataByProduct}
+                    columns={columns}
+                    scroll={{ x: 450 }}
+                    style={{
+                      textAlign: "center",
+                      // width: "445px",
+                      // height: "40px",
+                    }}
+                    onRow={(record) => ({
+                      onClick: () => {
+                        handleRowProduct(record);
+                        setOpenProductModal(false);
+                      },
+                    })}
+                  />
+                </Modal.Body>
+              </Modal>
+            </div>
+          </div>
+          <div className="d-flex flex-column g-5">
+            <Form
+              layout="vertical"
+              autoComplete="off"
+              // onFinish={(values) => {
+              //   getDataProduct(values);
+              //   createProduct(values.product_id);
+              // }}
+              onFinish={onFinish}
+              form={formProduct}
+              className="content-sub-form-body"
+              initialValues={{ jobStatus: showStatus() }}
+            >
+              <Form.Item
+                name="jobRef"
+                label="เลขงาน"
+                rules={[{ required: true }, { type: "string" }]}
+                className="form-item-custom-size"
+              >
+                <Input prefix={<MdOutlineWorkOutline />} disabled />
+                {/* {dataProduct.map((item) => (
+                <Input
+                  prefix={<MdOutlineWorkOutline />}
+                  key={item.product_id}
+                  value={item.product_name}
+                />
+              ))} */}
+              </Form.Item>
+
+              <Form.Item
+                name="jobStatus"
+                label="สถานะ"
+                rules={[{ required: true }]}
+                className="form-item-custom-size"
+              >
+                <Input prefix={<MdOutlineWorkOutline />} disabled={true} />
+              </Form.Item>
+
+              <Form.Item
+                name="createDate"
+                label="วันที่เปิดงาน"
+                rules={[{ required: true }]}
+                className="form-item-custom-size"
+                initialValue={dayjs()}
+              >
+                <DatePicker
+                  format="DD/MM/YYYY"
+                  locale={locale}
+                  style={{ width: "100%" }}
+                  disabled={true}
+                />
+                {/* pattern job = "job2025081801" */}
+              </Form.Item>
+
+              <Form.Item
+                name="serialNumber"
+                label="Serial Number"
+                rules={[{ required: true }, { type: "string" }]}
+                className="form-item-custom-size"
+              >
+                <Input prefix={<MdOutlineWorkOutline />} />
+              </Form.Item>
+
+              <Form.Item
+                name="product_name"
+                label="ชื่อสินค้า"
+                rules={[{ required: true }, { type: "string" }]}
+                className="form-item-custom-size"
+              >
+                <Input
+                  prefix={<MdOutlineWorkOutline />}
+                  disabled={isFormProductDisabled}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="productRef"
+                label="รหัสสินค้า"
+                rules={[{ required: true }, { type: "string" }]}
+                className="form-item-custom-size"
+              >
+                <Input
+                  prefix={<MdOutlineWorkOutline />}
+                  disabled={isFormProductDisabled}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="sku"
+                label="SKU"
+                rules={[{ required: true }, { type: "string" }]}
+                className="form-item-custom-size"
+              >
+                <Input
+                  prefix={<MdOutlineWorkOutline />}
+                  disabled={isFormProductDisabled}
+                />
+              </Form.Item>
+
+              {/* <Form.Item
+              name="image"
+              label="รูปภาพสินค้า"
+              rules={[{ required: true }, { type: "string" }]}
+              className="form-item-custom-size"
+            >
+              <Input prefix={<MdOutlineWorkOutline />} />
+            </Form.Item> */}
+
+              <Form.Item
+                name="brand"
+                label="แบรนด์"
+                rules={[{ required: true }, { type: "string" }]}
+                className="form-item-custom-size"
+              >
+                <Input
+                  prefix={<MdOutlineWorkOutline />}
+                  disabled={isFormProductDisabled}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="category"
+                label="ประเภทสินค้า"
+                rules={[{ required: true }, { type: "string" }]}
+                className="form-item-custom-size"
+              >
+                <Input
+                  prefix={<MdOutlineWorkOutline />}
+                  disabled={isFormProductDisabled}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="description"
+                label="รายละเอียดสินค้า"
+                rules={[{ required: true }]}
+                className="form-item-custom-size"
+              >
+                <Input
+                  prefix={<MdOutlineDescription />}
+                  disabled={isFormProductDisabled}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="unit"
+                label="จำนวนสินค้าที่เคลม"
+                rules={[{ required: true }, { type: "number" }]}
+                className="form-item-custom-size"
+              >
+                <InputNumber
+                  prefix={<MdOutlineDescription />}
+                  className="form-item-custom-size"
+                  min={1}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="pcs"
+                label="หน่วย"
+                rules={[{ required: true }]}
+                className="form-item-custom-size"
+              >
+                <Input
+                  prefix={<MdOutlineDescription />}
+                  disabled={isFormProductDisabled}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="expected_completion_date"
+                label="วันที่คาดว่าจะซ่อมสินค้าสำเร็จ"
+                rules={[{ required: true }]}
+                className="form-item-custom-size"
+              >
+                <DatePicker
+                  format="DD/MM/YYYY"
+                  locale={locale}
+                  style={{ width: "100%" }}
+                  onChange={handleDateChange}
+                  disabledDate={disableDatePass}
+                />
+                {/* <Input prefix={<MdOutlineDescription />} /> */}
+              </Form.Item>
+
+              <Form.Item
+                name="repair_duration"
+                label="ระยะเวลาในการซ่อมสินค้า"
+                rules={[{ required: true }]}
+                className="form-item-custom-size"
+              >
+                <Input prefix={<MdOutlineDescription />} disabled />
+              </Form.Item>
+
+              <Form.Item
+                name="image"
+                label="รูปภาพสินค้า"
+                valuePropName="fileList"
+                getValueFromEvent={normFile}
+                rules={[{ required: true, message: "กรุณาอัปโหลดรูปภาพ" }]}
+                className="form-item-custom-size"
+              >
+                <Dragger {...uploadProps}>
+                  <p className="ant-upload-drag-icon">
+                    <MdOutlineWorkOutline />
+                  </p>
+                  <p className="ant-upload-text">คลิกหรือลากไฟล์มาวางที่นี่</p>
+                  <p className="ant-upload-hint">
+                    รองรับการอัปโหลดไฟล์เดียวหรือหลายไฟล์
+                  </p>
+                </Dragger>
+              </Form.Item>
+
+              <Form.Item name="claimImage" hidden>
+                <Input />
+              </Form.Item>
+
+              {/* <Form.Item
+              name="image"
+              label="รูปภาพสินค้าที่ต้องการเคลม"
+              valuePropName="fileList"
+              rules={[{ required: true }]}
+              className="form-item-custom-size"
+            >
+              {dataProduct.map((item) => (
+                <Input
+                  prefix={<MdOutlineDescription />}
+                  key={item.id}
+                  value={item.image}
+                />
+              ))}
+            </Form.Item> */}
+            </Form>
+          </div>
+        </div>
+        <div className="d-flex justify-content-center mt-5 mb-5">
+          {/* <Button
+            className="d-flex align-items-center justify-content-center btn-save margin-top-100"
+            onClick={() => {
+              // showModalJob();
+              form.submit();
+              formCustomer.submit();
+            }}
+          >
+            <FaRegSave />
+            <span className="button-text">บันทึกข้อมูลงาน</span>
+          </Button> */}
+
+          <Button
+            className="d-flex align-items-center justify-content-between btn-save margin-top-100"
+            onClick={() => {
+              // showModalJob();
+              handleCombinedSubmit();
+              // formProduct.submit();
+              // formCustomer.submit();
+            }}
+          >
+            <FaRegSave className="button-icon justify-content-start" />
+            <span className="button-text">บันทึกข้อมูลงาน</span>
+          </Button>
+
+          {/* <Modal show={openModalJob} onHide={handleCloseJob}>
+            <Modal.Body
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "column",
+              }}
+            >
+              <IoMdCheckmarkCircle className="modal-icon" />
+              <p>การเพิ่มงานเข้าในระบบสำเร็จ</p>
+              <Button
+                className="d-flex align-items-center justify-content-center btn-modal margin-top-100"
+                onClick={handletoJob}
+              >
+                <span className="d-flex justify-content-end">งานทั้งหมด</span>
+              </Button>
+            </Modal.Body>
+          </Modal> */}
+          {/* ✅ Success Modal */}
+          <Modal show={openModalJob} onHide={() => setOpenModalJob(false)}>
+            <Modal.Body
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "column",
+              }}
+            >
+              <IoMdCheckmarkCircle
+                style={{ width: 64, height: 64, color: "#28a745" }}
+              />
+              <p style={{ color: "#28a745", fontWeight: 600 }}>
+                การเพิ่มงานเข้าในระบบสำเร็จ
+              </p>
+              <Button
+                className="d-flex align-items-center justify-content-center margin-top-100"
+                style={{
+                  backgroundColor: "#28a745",
+                  border: "none",
+                  minWidth: 160,
+                }}
+                onClick={handletoJob}
+              >
+                <span className="d-flex justify-content-end">งานทั้งหมด</span>
+              </Button>
+            </Modal.Body>
+          </Modal>
+
+          {/* ❌ Error Modal */}
+          <Modal
+            show={openModalJobError}
+            onHide={() => setOpenModalJobError(false)}
+          >
+            <Modal.Body
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "column",
+              }}
+            >
+              <IoMdCloseCircle
+                style={{ width: 64, height: 64, color: "#dc3545" }}
+              />
+              <p style={{ color: "#dc3545", fontWeight: 600 }}>
+                กรอกข้อมูลไม่สำเร็จ กรุณากรอกใหม่
+              </p>
+              <Button
+                className="d-flex align-items-center justify-content-center margin-top-100"
+                style={{
+                  backgroundColor: "#dc3545",
+                  border: "none",
+                  minWidth: 160,
+                }}
+                onClick={() => setOpenModalJobError(false)}
+              >
+                <span className="d-flex justify-content-end">
+                  กลับไปกรอกข้อมูล
+                </span>
+              </Button>
+            </Modal.Body>
+          </Modal>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// import React, { useEffect } from "react";
+// import {
+//   Form,
+//   Input,
+//   Select,
+//   DatePicker,
+//   Table,
+//   InputNumber,
+//   message,
+// } from "antd";
+// import Button from "react-bootstrap/Button";
+// import { MdOutlineWorkOutline } from "react-icons/md";
+// import { MdOutlineDescription } from "react-icons/md";
+// import { FaRegSave } from "react-icons/fa";
+// import { LiaUserEditSolid } from "react-icons/lia";
+// import { MdOutlineEmail } from "react-icons/md";
+// import { GrDatabase } from "react-icons/gr";
+// import Modal from "react-bootstrap/Modal";
+// import { IoMdCheckmarkCircle } from "react-icons/io";
+// import { useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import dayjs from "dayjs";
+// import buddhistEra from "dayjs/plugin/buddhistEra";
+// import "dayjs/locale/th";
+// import locale from "antd/es/date-picker/locale/th_TH";
+// import axios from "axios";
+// import { IoSearch } from "react-icons/io5";
+// import { FaUserPlus } from "react-icons/fa";
+// import { MdProductionQuantityLimits } from "react-icons/md";
+// import { FiHome } from "react-icons/fi";
+
+// dayjs.extend(buddhistEra);
+// dayjs.locale("th");
+// export default function CreateJobForm() {
+//   // const [form] = Form.useForm();
+//   const [formCustomer] = Form.useForm();
+//   const [formProduct] = Form.useForm();
+
+//   const [dataProduct, setDataProduct] = useState([]);
+//   const [dataCustomer, setDataCustomer] = useState([]);
+
+//   const [openProductModal, setOpenProductModal] = useState(false);
+
+//   const [openModalJob, setOpenModalJob] = useState(false);
+
+//   const [openModalCustomer, setOpenModalCustomer] = useState(false);
+
+//   const [searchCustomer, setSearchCustomer] = useState("");
+//   const [searchProduct, setSearchProduct] = useState("");
+
+//   const [selectedDataProduct, setSelectedDataProduct] = useState(null);
+//   const [selectedDataCustomer, setSelectedDataCustomer] = useState(null);
+//   const [isFormProductDisabled, setIsFormProductDisabled] = useState(true);
+//   const [isFormCustomerDisabled, setIsFormCustomerDisabled] = useState(true);
+
+//   const [isGenerated, setIsGenerated] = useState(false);
+
+//   const [selectedItems, setSelectedItems] = useState([]);
+
+//   function showStatus() {
+//     let status = "เริ่มงาน";
+//     console.log("สถานะภายในฟังก์ชัน:", status);
+//     return status;
+//   }
+//   showStatus();
+
+//   // const showModalJob = () => {
+//   //   console.log("showModalJob");
+//   //   setOpenModalJob(true);
+//   // };
+//   const handleCloseJob = () => {
+//     setOpenModalJob(false);
+//   };
+
+//   const showProductModal = () => {
+//     setOpenProductModal(true);
+//   };
+//   const handleCloseProductModal = () => {
+//     setOpenProductModal(false);
+//   };
+
+//   const handleCloseCustomerModal = () => {
+//     setOpenModalCustomer(false);
+//   };
+//   const navigate = useNavigate();
+
+//   const handleCreateJob = () => {
+//     navigate("/create-job");
+//   };
+
+//   const toCreateProduct = () => {
+//     navigate("/create-product");
+//   };
+
+//   const toCreateCustomer = () => {
+//     navigate("/create-customer");
+//   };
+
+//   const getDataProduct = () => {
+//     const url = "http://localhost:3302/get-product";
+//     axios
+//       .get(url)
+//       .then((res) => {
+//         setDataProduct(res.data);
+//         console.log(res.data);
+//       })
+//       .catch((error) => {
+//         console.error("Error fetching product data:", error);
+//       });
+//   };
+
+//   const getDataCustomer = () => {
+//     const url = "http://localhost:3302/get-customer";
+//     axios
+//       .get(url)
+//       .then((res) => {
+//         setDataCustomer(res.data);
+//         setSelectedDataProduct(res.data[0]);
+//         console.log(res.data);
+//       })
+//       .catch((error) => {
+//         console.error("Error fetching customer data:", error);
+//       });
+//   };
+
+//   // const createJob = (data) => {
+//   //   const url = "http://localhost:3302/create-job";
+//   //   axios
+//   //     .post(url, data)
+//   //     .then((res) => {
+//   //       setDataCustomer(res.data);
+//   //       console.log("Job created successfully:", res.data);
+//   //     })
+//   //     .catch((error) => {
+//   //       console.error("Error creating job:", error);
+//   //     });
+//   // };
+
+//   const createJob = (data) => {
+//     const url = "http://localhost:3302/create-job";
+//     axios
+//       .post(url, data)
+//       .then((res) => {
+//         // แสดงข้อความเมื่อส่งข้อมูลสำเร็จ
+//         message.success("บันทึกงานใหม่สำเร็จ!");
+//         console.log("Job created successfully:", res.data);
+
+//         // ล้างข้อมูลในฟอร์มหลังจากส่งสำเร็จ
+//         formProduct.resetFields();
+//         formCustomer.resetFields();
+//       })
+//       .catch((error) => {
+//         // แสดงข้อความเมื่อเกิดข้อผิดพลาด
+//         message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
+//         console.error("Error creating job:", error);
+//       });
+//   };
+
+//   useEffect(() => {
+//     getDataProduct();
+//     getDataCustomer();
+//     showStatus();
+//   }, []);
+
+//   useEffect(() => {
+//     // Logic ของ useEffect ที่สอง
+//     if (selectedDataProduct) {
+//       formProduct.setFieldsValue({
+//         product_name: selectedDataProduct.product_name,
+//         productRef: selectedDataProduct.productRef,
+//         sku: selectedDataProduct.sku,
+//         brand: selectedDataProduct.brand,
+//         pcs: selectedDataProduct.pcs,
+//         category: selectedDataProduct.category,
+//         description: selectedDataProduct.description,
+//       });
+//       setIsFormProductDisabled(true);
+//     } else {
+//       // ถ้าไม่มีข้อมูลสินค้าถูกเลือก ให้ reset ฟอร์มและสร้าง Job ID
+//       setIsFormProductDisabled(false);
+//       formProduct.resetFields();
+
+//       // Logic ของ useEffect ตัวแรก
+//       const generateJobId = () => {
+//         const today = new Date();
+//         const year = today.getFullYear();
+//         const month = String(today.getMonth() + 1).padStart(2, "0");
+//         const day = String(today.getDate()).padStart(2, "0");
+//         const datePrefix = `${year}${month}${day}`;
+
+//         const lastGeneratedData = JSON.parse(
+//           localStorage.getItem("lastGeneratedJob")
+//         );
+//         let sequenceNumber = 1;
+//         if (lastGeneratedData && lastGeneratedData.date === datePrefix) {
+//           sequenceNumber = lastGeneratedData.sequence + 1;
+//         }
+//         const formattedSequence = String(sequenceNumber).padStart(3, "0");
+
+//         const newJobId = `JOB${datePrefix}${formattedSequence}`;
+
+//         const newLastGeneratedData = {
+//           date: datePrefix,
+//           sequence: sequenceNumber,
+//         };
+//         localStorage.setItem(
+//           "lastGeneratedJob",
+//           JSON.stringify(newLastGeneratedData)
+//         );
+
+//         formProduct.setFieldsValue({ jobRef: newJobId });
+//         setIsGenerated(true);
+//       };
+
+//       generateJobId();
+//     }
+//   }, [selectedDataProduct, formProduct]);
+
+//   // useEffect(() => {
+//   //   const generateJobId = () => {
+//   //     const today = new Date();
+//   //     const year = today.getFullYear();
+//   //     const month = String(today.getMonth() + 1).padStart(2, "0");
+//   //     const day = String(today.getDate()).padStart(2, "0");
+//   //     const datePrefix = `${year}${month}${day}`;
+
+//   //     const lastGeneratedData = JSON.parse(
+//   //       localStorage.getItem("lastGeneratedJob")
+//   //     );
+//   //     let sequenceNumber = 1;
+
+//   //     if (lastGeneratedData && lastGeneratedData.date === datePrefix) {
+//   //       sequenceNumber = lastGeneratedData.sequence + 1;
+//   //     }
+
+//   //     // 4. จัดรูปแบบเลขลำดับให้มี 3 หลัก
+//   //     const formattedSequence = String(sequenceNumber).padStart(3, "0");
+
+//   //     // 5. สร้างหมายเลข Job ID ใหม่
+//   //     const newJobId = `JOB${datePrefix}${formattedSequence}`;
+
+//   //     // 6. บันทึกข้อมูลเลขลำดับล่าสุดลงใน localStorage
+//   //     const newLastGeneratedData = {
+//   //       date: datePrefix,
+//   //       sequence: sequenceNumber,
+//   //     };
+//   //     localStorage.setItem(
+//   //       "lastGeneratedJob",
+//   //       JSON.stringify(newLastGeneratedData)
+//   //     );
+
+//   //     // 7. กำหนดค่าลงในฟอร์ม
+//   //     form.setFieldsValue({
+//   //       jobRef: newJobId,
+//   //     });
+//   //     setIsGenerated(true);
+//   //   };
+
+//   //   // เรียกฟังก์ชันสร้างเลข Job ทันทีที่หน้าเว็บถูกเปิด
+//   //   // ตรวจสอบเพื่อไม่ให้สร้างซ้ำซ้อนถ้ามีการ re-render
+//   //   if (!isGenerated) {
+//   //     generateJobId();
+//   //   }
+//   // }, [form, isGenerated]);
+
+//   // useEffect(() => {
+//   //   if (selectedDataProduct) {
+//   //     form.setFieldsValue({
+//   //       product_name: selectedDataProduct.product_name,
+//   //       sku: selectedDataProduct.sku,
+//   //       brand: selectedDataProduct.brand,
+//   //       pcs: selectedDataProduct.pcs,
+//   //       description: selectedDataProduct.description,
+//   //     });
+//   //   }
+//   // }, [selectedDataProduct, form]);
+
+//   // useEffect(() => {
+//   //   if (selectedDataProduct) {
+//   //     form.setFieldsValue({
+//   //       product_name: selectedDataProduct.product_name,
+//   //       sku: selectedDataProduct.sku,
+//   //       brand: selectedDataProduct.brand,
+//   //       pcs: selectedDataProduct.pcs,
+//   //       description: selectedDataProduct.description,
+//   //     });
+//   //     setIsFormProductDisabled(true);
+//   //   } else {
+//   //     setIsFormProductDisabled(false);
+//   //     form.resetFields();
+//   //   }
+//   // }, [selectedDataProduct, form]);
+
+//   useEffect(() => {
+//     if (selectedDataCustomer) {
+//       formCustomer.setFieldsValue({
+//         customerRef: selectedDataCustomer.customerRef,
+//         customer_firstname: selectedDataCustomer.customer_firstname,
+//         customer_lastname: selectedDataCustomer.customer_lastname,
+//         customer_old: selectedDataCustomer.customer_old,
+//         username: selectedDataCustomer.username,
+//         email: selectedDataCustomer.email,
+//         line_id: selectedDataCustomer.line_id,
+//         phone: selectedDataCustomer.phone,
+//       });
+//       setIsFormCustomerDisabled(true);
+//     } else {
+//       setIsFormCustomerDisabled(false);
+//       formCustomer.resetFields();
+//     }
+//   }, [selectedDataCustomer, formCustomer]);
+
+//   const handleRowProduct = (record) => {
+//     if (
+//       selectedDataProduct &&
+//       selectedDataProduct.product_id === record.product_id
+//     ) {
+//       setSelectedDataProduct(null);
+//     } else {
+//       setSelectedDataProduct(record);
+//     }
+//   };
+
+//   const handleRowCustomer = (record) => {
+//     if (
+//       selectedDataCustomer &&
+//       selectedDataCustomer.customer_id === record.customer_id
+//     ) {
+//       setSelectedDataCustomer(null);
+//     } else {
+//       setSelectedDataCustomer(record);
+//     }
+//   };
+
+//   const columns = [
+//     {
+//       title: "ชื่อสินค้า",
+//       dataIndex: "product_name",
+//       key: "product_name",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.product_name.localeCompare(b.product_name),
+//     },
+//     {
+//       title: "แบรนด์",
+//       dataIndex: "brand",
+//       key: "brand",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.brand.localeCompare(b.brand),
+//     },
+//     {
+//       title: "SKU",
+//       dataIndex: "sku",
+//       key: "sku",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.sku.localeCompare(b.sku),
+//     },
+//   ];
+
+//   const columnsCustomer = [
+//     {
+//       title: "รหัสลูกค้า",
+//       dataIndex: "customerRef",
+//       key: "customerRef",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.customerRef.localeCompare(b.customerRef),
+//     },
+//     {
+//       title: "ชื่อ",
+//       dataIndex: "customer_firstname",
+//       key: "customer_firstname",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) =>
+//         a.customer_firstname.localeCompare(b.customer_firstname),
+//     },
+//     {
+//       title: "นามสกุล",
+//       dataIndex: "customer_lastname",
+//       key: "customer_lastname",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.customer_lastname.localeCompare(b.customer_lastname),
+//     },
+//     {
+//       title: "Username",
+//       dataIndex: "username",
+//       key: "username",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.username.localeCompare(b.username),
+//     },
+//     {
+//       title: "Email",
+//       dataIndex: "email",
+//       key: "email",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.email.localeCompare(b.email),
+//     },
+//     {
+//       title: "Line id",
+//       dataIndex: "line_id",
+//       key: "line_id",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.line_id.localeCompare(b.line_id),
+//     },
+//     {
+//       title: "เบอร์โทรศัพท์",
+//       dataIndex: "phone",
+//       key: "phone",
+//       render: (text) => <a>{text}</a>,
+//       sorter: (a, b) => a.phone.localeCompare(b.phone),
+//     },
+//   ];
+
+//   const filterDataByProduct = dataProduct.filter(
+//     (item) =>
+//       item.product_name.toLowerCase().includes(searchProduct.toLowerCase()) ||
+//       item.brand.toLowerCase().includes(searchProduct.toLocaleLowerCase()) ||
+//       item.sku.toLowerCase().includes(searchProduct.toLocaleLowerCase())
+//   );
+
+//   const fields = [
+//     "customerRef",
+//     "customer_firstname",
+//     "customer_lastname",
+//     "username",
+//     "email",
+//     "line_id",
+//     "phone",
+//   ];
+
+//   const filterDataByCustomer = dataCustomer.filter((customer) => {
+//     return fields.some((field) => {
+//       const fieldValue = customer[field];
+//       return (
+//         typeof fieldValue === "string" &&
+//         fieldValue.toLowerCase().includes(searchCustomer.toLowerCase())
+//       );
+//     });
+//   });
+
+//   const disableDatePass = (current) => {
+//     return current && current < dayjs().endOf("day");
+//     // const today = dayjs();
+//     //   return current && current.isBefore(today, 'day');
+//   };
+
+//   const handleDateChange = (date) => {
+//     if (date) {
+//       const today = dayjs();
+//       const duration = date.diff(today, "day");
+//       formProduct.setFieldsValue({
+//         repair_duration: duration + 1,
+//       });
+//     } else {
+//       formProduct.setFieldsValue({
+//         repair_duration: null,
+//       });
+//     }
+//   };
+
+//   const handleCombinedSubmit = async () => {
+//     try {
+//       const productValues = await formProduct.validateFields();
+//       const customerValues = await formCustomer.validateFields();
+
+//       const combinedData = {
+//         ...productValues,
+//         ...customerValues,
+//       };
+
+//       if (combinedData.expected_completion_date) {
+//         combinedData.expected_completion_date = dayjs(
+//           combinedData.expected_completion_date
+//         ).format("YYYY-MM-DD HH:mm:ss");
+//       }
+
+//       console.log("ข้อมูลที่ถูกรวมและแปลงแล้วก่อนส่ง API:", combinedData);
+//       createJob(combinedData);
+//     } catch (errorInfo) {
+//       console.error("Validation Failed:", errorInfo);
+//       message.warning("กรุณาตรวจสอบข้อมูลที่ยังไม่ครบถ้วน");
+//     }
+//   };
+
+//   /////////////////////////เพิ่มสินค้าในรายการ///////////////////////
+//   const handleAddItem = (productId) => {
+//     const existingItem = selectedItems.find(
+//       (item) => item.productId === productId
+//     );
+//     if (existingItem) {
+//       // ถ้าสินค้ามีอยู่แล้ว ให้เพิ่มจำนวน
+//       setSelectedItems(
+//         selectedItems.map((item) =>
+//           item.productId === productId
+//             ? { ...item, quantity: item.quantity + 1 }
+//             : item
+//         )
+//       );
+//     } else {
+//       setSelectedItems([...selectedItems, { productId, quantity: 1 }]);
+//     }
+//   };
+
+//   return (
+//     <div className="contain-main">
+//       <h2 className="text-dark mb-4 mt-5 text-center">Create Job</h2>
+//       <div>
+//         <div className="d-flex align-items-center justify-content-flex-start gap-3 mt-4 mb-4">
+//           <h4>ข้อมูลสินค้า</h4>
+//           <Button
+//             className="d-flex align-items-center justify-content-between btn-data margin-top-100"
+//             onClick={showProductModal}
+//           >
+//             <GrDatabase className="button-icon justify-content-start" />
+//             <span className="d-flex justify-content-center">
+//               ข้อมูลสินค้าในคลัง
+//             </span>
+//           </Button>
+
+//           <Button
+//             className="d-flex align-items-center justify-content-between btn-table margin-top-100"
+//             onClick={toCreateProduct}
+//           >
+//             <MdProductionQuantityLimits className="button-icon justify-content-start" />
+//             <span className="d-flex justify-content-end">
+//               เพิ่มข้อมูลสินค้า
+//             </span>
+//           </Button>
+//           <div>
+//             <Modal show={openProductModal} onHide={handleCloseProductModal}>
+//               <Modal.Body
+//                 style={{
+//                   display: "flex",
+//                   alignItems: "center",
+//                   flexDirection: "column",
+//                 }}
+//               >
+//                 <Form.Item
+//                   name="Input"
+//                   rules={[{ required: true, message: "Please input!" }]}
+//                 >
+//                   <Input
+//                     onChange={(e) => setSearchProduct(e.target.value)}
+//                     prefix={
+//                       <IoSearch style={{ width: "20px", height: "20px" }} />
+//                     }
+//                     style={{
+//                       width: "399px",
+//                       height: "35px",
+//                       backgroundColor: "#FFFFFFFF",
+//                       // borderBlock: "#000000",
+//                       color: "#CCCCCC",
+//                       borderRadius: "10px",
+//                     }}
+//                   />
+//                 </Form.Item>
+
+//                 <Table
+//                   dataSource={filterDataByProduct}
+//                   columns={columns}
+//                   scroll={{ x: 450 }}
+//                   style={{
+//                     textAlign: "center",
+//                     // width: "445px",
+//                     // height: "40px",
+//                   }}
+//                   onRow={(record) => ({
+//                     onClick: () => {
+//                       handleRowProduct(record);
+//                       setOpenProductModal(false);
+//                     },
+//                   })}
+//                 />
+//               </Modal.Body>
+//             </Modal>
+//           </div>
+//         </div>
+//         <div className="d-flex flex-column g-5">
+//           <Form
+//             layout="vertical"
+//             autoComplete="off"
+//             // onFinish={(values) => {
+//             //   getDataProduct(values);
+//             //   createProduct(values.product_id);
+//             // }}
+//             onFinish={createJob}
+//             form={formProduct}
+//             className="content-sub-form-body"
+//             initialValues={{ jobStatus: showStatus() }}
+//           >
+//             <Form.Item
+//               name="jobRef"
+//               label="เลขงาน"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input prefix={<MdOutlineWorkOutline />} disabled />
+//               {/* {dataProduct.map((item) => (
+//                 <Input
+//                   prefix={<MdOutlineWorkOutline />}
+//                   key={item.product_id}
+//                   value={item.product_name}
+//                 />
+//               ))} */}
+//             </Form.Item>
+
+//             <Form.Item
+//               name="jobStatus"
+//               label="สถานะ"
+//               rules={[{ required: true }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input prefix={<MdOutlineWorkOutline />} disabled={true} />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="createDate"
+//               label="วันที่เปิดงาน"
+//               rules={[{ required: true }]}
+//               className="form-item-custom-size"
+//               initialValue={dayjs()}
+//             >
+//               <DatePicker
+//                 format="DD/MM/YYYY"
+//                 locale={locale}
+//                 style={{ width: "100%" }}
+//                 disabled={true}
+//               />
+//               {/* pattern job = "job2025081801" */}
+//             </Form.Item>
+
+//             <Form.Item
+//               name="serialNumber"
+//               label="Serial Number"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input prefix={<MdOutlineWorkOutline />} />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="product_name"
+//               label="ชื่อสินค้า"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<MdOutlineWorkOutline />}
+//                 disabled={isFormProductDisabled}
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="productRef"
+//               label="รหัสสินค้า"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<MdOutlineWorkOutline />}
+//                 disabled={isFormProductDisabled}
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="sku"
+//               label="SKU"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<MdOutlineWorkOutline />}
+//                 disabled={isFormProductDisabled}
+//               />
+//             </Form.Item>
+
+//             {/* <Form.Item
+//               name="image"
+//               label="รูปภาพสินค้า"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input prefix={<MdOutlineWorkOutline />} />
+//             </Form.Item> */}
+
+//             <Form.Item
+//               name="brand"
+//               label="แบรนด์"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<MdOutlineWorkOutline />}
+//                 disabled={isFormProductDisabled}
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="category"
+//               label="ประเภทสินค้า"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<MdOutlineWorkOutline />}
+//                 disabled={isFormProductDisabled}
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="description"
+//               label="รายละเอียดสินค้า"
+//               rules={[{ required: true }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<MdOutlineDescription />}
+//                 disabled={isFormProductDisabled}
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="unit"
+//               label="จำนวนสินค้าที่เคลม"
+//               rules={[{ required: true }, { type: "number" }]}
+//               className="form-item-custom-size"
+//             >
+//               <InputNumber
+//                 prefix={<MdOutlineDescription />}
+//                 className="form-item-custom-size"
+//                 min={1}
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="pcs"
+//               label="หน่วย"
+//               rules={[{ required: true }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<MdOutlineDescription />}
+//                 disabled={isFormProductDisabled}
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="expected_completion_date"
+//               label="วันที่คาดว่าจะซ่อมสินค้าสำเร็จ"
+//               rules={[{ required: true }]}
+//               className="form-item-custom-size"
+//             >
+//               <DatePicker
+//                 format="DD/MM/YYYY"
+//                 locale={locale}
+//                 style={{ width: "100%" }}
+//                 onChange={handleDateChange}
+//                 disabledDate={disableDatePass}
+//               />
+//               {/* <Input prefix={<MdOutlineDescription />} /> */}
+//             </Form.Item>
+
+//             <Form.Item
+//               name="repair_duration"
+//               label="ระยะเวลาในการซ่อมสินค้า"
+//               rules={[{ required: true }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input prefix={<MdOutlineDescription />} disabled />
+//             </Form.Item>
+
+//             {/* <Form.Item
+//               name="image"
+//               label="รูปภาพสินค้าที่ต้องการเคลม"
+//               valuePropName="fileList"
+//               rules={[{ required: true }]}
+//               className="form-item-custom-size"
+//             >
+//               {dataProduct.map((item) => (
+//                 <Input
+//                   prefix={<MdOutlineDescription />}
+//                   key={item.id}
+//                   value={item.image}
+//                 />
+//               ))}
+//             </Form.Item> */}
+//           </Form>
+//         </div>
+//       </div>
+
+//       {/*///////////////////////////////////////////////////////////// ข้อมูลลูกค้า ///////////////////////////////////////////////////////////*/}
+
+//       <div>
+//         <div className="d-flex align-items-center justify-content-flex-start gap-3 mt-5 mb-4">
+//           <h4>ข้อมูลลูกค้า</h4>
+//           <Button
+//             // style={{
+//             //   color: "#213F66",
+//             //   borderColor: "#213F66",
+//             //   height: "59px",
+//             //   fontSize: "16px",
+//             // }}
+//             className="d-flex align-items-center justify-content-between btn-data margin-top-100"
+//             onClick={() => setOpenModalCustomer(true)}
+//           >
+//             <GrDatabase className="button-icon justify-content-start" />
+//             <span className="d-flex justify-content-end">ฐานข้อมูลลูกค้า</span>
+//           </Button>
+
+//           <Button
+//             className="d-flex align-items-center justify-content-between btn-table margin-top-100"
+//             onClick={toCreateCustomer}
+//           >
+//             <FaUserPlus className="button-icon justify-content-start" />
+//             <span className="d-flex justify-content-end">
+//               เพิ่มข้อมูลลูกค้า
+//             </span>
+//           </Button>
+
+//           <div>
+//             <Modal show={openModalCustomer} onHide={handleCloseCustomerModal}>
+//               <Modal.Body
+//                 style={{
+//                   display: "flex",
+//                   alignItems: "center",
+//                   flexDirection: "column",
+//                 }}
+//               >
+//                 <Form.Item
+//                   name="Input"
+//                   rules={[{ required: true, message: "Please input!" }]}
+//                 >
+//                   <Input
+//                     onChange={(e) => setSearchCustomer(e.target.value)}
+//                     prefix={
+//                       <IoSearch style={{ width: "20px", height: "20px" }} />
+//                     }
+//                     style={{
+//                       width: "399px",
+//                       height: "35px",
+//                       backgroundColor: "#FFFFFFFF",
+//                       // borderBlock: "#000000",
+//                       color: "#CCCCCC",
+//                       borderRadius: "10px",
+//                     }}
+//                   />
+//                 </Form.Item>
+
+//                 <Table
+//                   dataSource={filterDataByCustomer}
+//                   columns={columnsCustomer}
+//                   scroll={{ x: 450 }}
+//                   style={{
+//                     textAlign: "center",
+//                     // width: "445px",
+//                     // height: "40px",
+//                   }}
+//                   onRow={(record) => ({
+//                     onClick: () => {
+//                       handleRowCustomer(record);
+//                       setOpenModalCustomer(false);
+//                     },
+//                   })}
+//                 />
+//               </Modal.Body>
+//             </Modal>
+//           </div>
+//         </div>
+//         <div>
+//           <Form
+//             layout="vertical"
+//             autoComplete="off"
+//             form={formCustomer}
+//             onFinish={createJob}
+//             className="content-sub-form-body"
+//           >
+//             <Form.Item
+//               name="customerRef"
+//               label="รหัสลูกค้า"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<LiaUserEditSolid />}
+//                 disabled={isFormCustomerDisabled}
+//                 // disabled
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="customer_firstname"
+//               label="ชื่อ"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input prefix={<LiaUserEditSolid />} disabled />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="customer_lastname"
+//               label="นามสกุล"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<LiaUserEditSolid />}
+//                 // disabled={isFormCustomerDisabled}
+//                 disabled
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="username"
+//               label="Username"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<LiaUserEditSolid />}
+//                 // disabled={isFormCustomerDisabled}
+//                 disabled
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="customer_old"
+//               label="อายุ"
+//               rules={[{ required: true }, { type: "number" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<LiaUserEditSolid />}
+//                 // disabled={isFormCustomerDisabled}
+//                 disabled
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="email"
+//               label="Email"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Input
+//                 prefix={<MdOutlineEmail />}
+//                 // disabled={isFormCustomerDisabled}
+//                 disabled
+//               />
+//             </Form.Item>
+
+//             <Form.Item
+//               name="customer_contact"
+//               label="ช่องทางติดต่อ"
+//               rules={[{ required: true }, { type: "string" }]}
+//               className="form-item-custom-size"
+//             >
+//               <Select placeholder="กรุณาเลือกช่องทางติดต่อ">
+//                 <Select.Option value="phone">เบอร์โทรศัพท์</Select.Option>
+//                 <Select.Option value="line">Line</Select.Option>
+//                 <Select.Option value="address">ที่อยู่ลูกค้า</Select.Option>
+//               </Select>
+//             </Form.Item>
+//             {/* <Form.Item
+//               dependencies={["contact"]}
+//               className="form-item-custom-size d-flex "
+//             >
+//               {({ getFieldValue }) => {
+//                 const contactMethod = getFieldValue("contact");
+//                 return (
+//                   <div className="content-sub-form-body">
+//                     <Form.Item
+//                       name="phone"
+//                       label="เบอร์โทรศัพท์"
+//                       rules={[
+//                         { required: contactMethod === "phone" },
+//                         { type: "string" },
+//                       ]}
+//                       className="form-item-custom-contact "
+//                     >
+//                       <Input
+//                         prefix={<FiPhoneCall />}
+//                         disabled={contactMethod !== "phone"}
+//                       />
+//                     </Form.Item>
+
+//                     <Form.Item
+//                       name="line"
+//                       label="Line ID"
+//                       rules={[
+//                         { required: contactMethod === "line" },
+//                         { type: "string" },
+//                       ]}
+//                       className="form-item-custom-contact "
+//                     >
+//                       <Input
+//                         prefix={<FaLine />}
+//                         disabled={contactMethod !== "line"}
+//                       />
+//                     </Form.Item>
+
+//                     <Form.Item
+//                       name="address"
+//                       label="ที่อยู่ลูกค้า"
+//                       rules={[
+//                         { required: contactMethod === "address" },
+//                         { type: "string" },
+//                       ]}
+//                       className="form-item-custom-contact "
+//                     >
+//                       <Input
+//                         prefix={<FiHome />}
+//                         disabled={contactMethod !== "address"}
+//                       />
+//                     </Form.Item>
+//                   </div>
+//                 );
+//               }} */}
+//             {/* </Form.Item> */}
+//           </Form>
+//         </div>
+//         <div className="d-flex justify-content-center mt-5 mb-5">
+//           {/* <Button
+//             className="d-flex align-items-center justify-content-center btn-save margin-top-100"
+//             onClick={() => {
+//               // showModalJob();
+//               form.submit();
+//               formCustomer.submit();
+//             }}
+//           >
+//             <FaRegSave />
+//             <span className="button-text">บันทึกข้อมูลงาน</span>
+//           </Button> */}
+
+//           <Button
+//             className="d-flex align-items-center justify-content-between btn-save margin-top-100"
+//             onClick={() => {
+//               // showModalJob();
+//               handleCombinedSubmit();
+//               // formProduct.submit();
+//               // formCustomer.submit();
+//             }}
+//           >
+//             <FaRegSave className="button-icon justify-content-start" />
+//             <span className="button-text">บันทึกข้อมูลงาน</span>
+//           </Button>
+
+//           <Modal show={openModalJob} onHide={handleCloseJob}>
+//             <Modal.Body
+//               style={{
+//                 display: "flex",
+//                 alignItems: "center",
+//                 flexDirection: "column",
+//               }}
+//             >
+//               <IoMdCheckmarkCircle className="modal-icon" />
+//               <p>การเพิ่มรายชื่อลูกค้าเข้าในระบบสำเร็จ</p>
+//               <Button
+//                 style={{
+//                   backgroundColor: "#36783C",
+//                   color: "#FFFFFF",
+//                   alignItems: "center",
+//                   display: "flex",
+//                   width: "149px",
+//                   height: "49px",
+//                   fontSize: "20px",
+//                 }}
+//                 onClick={handleCreateJob}
+//               >
+//                 สร้างงาน
+//               </Button>
+//             </Modal.Body>
+//           </Modal>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
