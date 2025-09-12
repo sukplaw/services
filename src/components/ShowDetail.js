@@ -34,6 +34,7 @@ const { Option } = Select;
 export default function ShowDetail() {
   const [data, setData] = useState([]);
   const [open, setOpen] = useState(false);
+  const [openClaim, setopenClaim] = useState(false);
   const { jobRef } = useParams();
 
   // none | status | customer | product
@@ -541,6 +542,57 @@ export default function ShowDetail() {
                       <strong>วันที่เปิดซ่อม</strong>
                     </p>
                     <p>{data[0].createAt}</p>
+                    <p className="mt-4">
+                      <strong>รูปภาพสินค้าที่เคลม</strong>
+                    </p>
+                    <Button
+                      className="d-flex align-items-center justify-content-between btn-show-image margin-top-100"
+                      onClick={() => setopenClaim(!openClaim)}
+                      aria-controls="example-collapse-text"
+                      aria-expanded={openClaim}
+                    >
+                      <IoImage className="button-icon justify-content-start" />
+                      <span className="button-text">ดูรูปภาพเพิ่มเติม</span>
+                    </Button>
+                    <div style={{ minHeight: "150px" }}>
+                      <Collapse in={openClaim} dimension="width">
+                        <div id="example-collapse-text">
+                          <Card body style={{ width: "400px" }}>
+                            {data &&
+                            data.length > 0 &&
+                            data[0].images &&
+                            data[0].images.length > 0 ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap", // ทำให้รูปภาพขึ้นบรรทัดใหม่ได้
+                                  gap: "10px",
+                                  justifyContent: "center", // จัดให้อยู่ตรงกลาง
+                                  padding: "10px",
+                                }}
+                              >
+                                {/* วนลูปเพื่อแสดงรูปภาพทั้งหมดจาก array `images` */}
+                                {data[0].images.map((url, index) => (
+                                  <img
+                                    key={`img-${index}`}
+                                    src={url}
+                                    alt={`รูปภาพที่ ${index + 1}`}
+                                    style={{
+                                      width: "calc(50% - 5px)", // 2 รูปต่อแถวพร้อมช่องว่าง
+                                      maxHeight: "200px",
+                                      objectFit: "cover",
+                                      borderRadius: "5px",
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <p>ไม่มีรูปภาพแสดง</p>
+                            )}
+                          </Card>
+                        </div>
+                      </Collapse>
+                    </div>
                   </div>
                   <div className="col-6">
                     <p className="mt-4">
@@ -575,22 +627,25 @@ export default function ShowDetail() {
                       <Collapse in={open} dimension="width">
                         <div id="example-collapse-text">
                           <Card body style={{ width: "400px" }}>
-                            {data.images && data.images.length > 0 ? (
-                              <Carousel>
-                                {data.images.map((url, index) => (
-                                  <Carousel.Item key={index}>
-                                    <img
-                                      src={url}
-                                      alt={`รูปที่ ${index + 1}`}
-                                      className="d-block w-100"
-                                      style={{
-                                        maxHeight: "400px",
-                                        objectFit: "contain",
-                                      }}
-                                    />
-                                  </Carousel.Item>
-                                ))}
-                              </Carousel>
+                            {data &&
+                            data.length > 0 &&
+                            data[0].image &&
+                            data[0].image.length > 0 ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap", // ทำให้รูปภาพขึ้นบรรทัดใหม่ได้
+                                  gap: "10px",
+                                  justifyContent: "center", // จัดให้อยู่ตรงกลาง
+                                  padding: "10px",
+                                }}
+                              >
+                                <img
+                                  src={data[0].image}
+                                  alt="Image from server"
+                                  className="image-show-detail"
+                                />
+                              </div>
                             ) : (
                               <p>ไม่มีรูปภาพแสดง</p>
                             )}
@@ -598,11 +653,11 @@ export default function ShowDetail() {
                         </div>
                       </Collapse>
                     </div>
-                    <img
+                    {/* <img
                       src={data[0].image}
                       alt="Image from server"
                       className="image-show-detail"
-                    />
+                    /> */}
                   </div>
                 </div>
               )}
