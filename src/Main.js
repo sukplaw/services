@@ -16,6 +16,7 @@ import Edit from "./components/Edit";
 import ShowDetail from "./components/ShowDetail";
 import NavProfileLinkBridge from "./components/NavProfileLinkBridge";
 import Profile from "./components/Profile";
+import JobStatusTable from "./components/JobStatusTable";
 
 const Main = () => {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -46,6 +47,10 @@ const Main = () => {
             <Route path="show-job/:jobRef" element={<ShowDetail />} />
             <Route path="show-customer" element={<Edit />} />
             <Route path="profile" element={<Profile />} />
+            <Route
+              path="jobs-by-status/:jobStatus"
+              element={<JobStatusTable />}
+            />
           </Routes>
         </div>
       </div>

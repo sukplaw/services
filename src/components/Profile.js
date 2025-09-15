@@ -2,18 +2,17 @@ import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-// import "@fortawesome/fontawesome-free/css/all.min.css";
 
 const DEFAULT_USER = {
   firstName: "",
   lastName: "",
-  employeeId: "",
+  serviceID: "",
   birthDate: "", // YYYY-MM-DD
   username: "",
   email: "",
   lineId: "",
   phone: "",
-  position: "",
+  role: "",
   avatar: "", // base64 dataURL
 };
 
@@ -25,71 +24,56 @@ export default function Profile() {
 
   // ฟังก์ชันสำหรับดึงข้อมูลผู้ใช้จาก API
   const getData = async () => {
+    setLoading(true); // เริ่มโหลดข้อมูล
+
     try {
-      const token = localStorage.getItem("token");
+      // ดึง token จาก localStorage
+      const token =
+        localStorage.getItem("token") || sessionStorage.getItem("token");
       if (!token) {
         console.error("No token found in localStorage.");
         setLoading(false);
         return;
       }
 
+      // ส่งคำขอ GET ไปที่ backend พร้อม token ใน Authorization header
       const res = await axios.get("http://localhost:5000/profile", {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, // ส่ง token ใน header
         },
       });
 
-      // อัปเดต state ด้วยข้อมูลที่ได้จาก API
-      const userFromApi = res.data;
+      // รับข้อมูลจาก API และอัปเดต state
+      const userFromApi = res.data.user; // สมมุติว่า API ส่งข้อมูลผู้ใช้ใน `user`
+      console.log(userFromApi); // log ข้อมูลที่ได้รับจาก API
+
       setUser((prev) => ({
         ...prev,
-        firstName: userFromApi.firstName || userFromApi.name || prev.firstName,
-        lastName: userFromApi.lastName || userFromApi.surname || prev.lastName,
-        employeeId:
-          userFromApi.employeeId || userFromApi.empId || prev.employeeId,
-        birthDate: userFromApi.birthDate || userFromApi.dob || prev.birthDate,
-        username: userFromApi.username || prev.username,
+        firstName: userFromApi.service_firstname || prev.firstName,
+        lastName: userFromApi.service_lastname || prev.lastName,
         email: userFromApi.email || prev.email,
-        lineId: userFromApi.lineId || userFromApi.line || prev.lineId,
-        phone:
-          userFromApi.phone ||
-          userFromApi.tel ||
-          userFromApi.mobile ||
-          prev.phone,
-        position: userFromApi.position || userFromApi.role || prev.position,
+        username: userFromApi.username || prev.username,
+        serviceID: userFromApi.serviceRef || prev.serviceRef,
+        lineId: userFromApi.lineId || prev.lineId,
+        phone: userFromApi.phone || prev.phone,
+        role: userFromApi.role || prev.role,
+        birthDate: userFromApi.birthDate || prev.birthDate,
         avatar: userFromApi.avatar || prev.avatar,
       }));
     } catch (error) {
-      console.error("Failed to fetch user data from API:", error);
+      // ตรวจสอบกรณีที่เกิดข้อผิดพลาด
+      if (error.response && error.response.status === 403) {
+        console.error("Token is invalid or expired.");
+        // แสดงข้อความเตือนหรือทำการ redirect ให้ผู้ใช้ล็อกอินใหม่
+      } else {
+        console.error("Failed to fetch user data from API:", error);
+      }
     } finally {
-      setLoading(false);
+      setLoading(false); // สิ้นสุดการโหลดข้อมูล
     }
   };
 
   useEffect(() => {
-    // โค้ดเดิมที่ดึงจาก localStorage
-    const raw = localStorage.getItem("user");
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        setUser((prev) => ({
-          ...prev,
-          firstName: parsed.firstName || parsed.name || prev.firstName,
-          lastName: parsed.lastName || parsed.surname || prev.lastName,
-          employeeId: parsed.employeeId || parsed.empId || prev.employeeId,
-          birthDate: parsed.birthDate || parsed.dob || prev.birthDate,
-          username: parsed.username || prev.username,
-          email: parsed.email || prev.email,
-          lineId: parsed.lineId || parsed.line || prev.lineId,
-          phone: parsed.phone || parsed.tel || parsed.mobile || prev.phone,
-          position: parsed.position || parsed.role || prev.position,
-          avatar: parsed.avatar || prev.avatar,
-        }));
-      } catch (e) {
-        console.error("Failed to parse user data from localStorage:", e);
-      }
-    }
-
     // เรียกใช้ฟังก์ชัน getData เพื่อดึงข้อมูลล่าสุดจาก API
     getData();
   }, []);
@@ -114,15 +98,31 @@ export default function Profile() {
     reader.readAsDataURL(file);
   };
 
-  const onSave = () => {
-    const next = { ...user };
-    localStorage.setItem("user", JSON.stringify(next));
-    if (next.username) {
-      localStorage.setItem("username", next.username);
+  const onSave = async () => {
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (!token) {
+      console.error("No token found in localStorage.");
+      return;
     }
-    setIsEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+    try {
+      // ส่งคำขอ PUT ไปที่ backend พร้อมข้อมูลที่แก้ไขแล้ว
+      const res = await axios.put("http://localhost:5000/profile", user, {
+        headers: {
+          Authorization: `Bearer ${token}`, // ส่ง token ใน header
+        },
+      });
+
+      if (res.status === 200) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch (error) {
+      console.error("Error saving user data:", error);
+    } finally {
+      setIsEditing(false); // ปิดโหมดแก้ไข
+    }
   };
 
   if (loading) {
@@ -208,7 +208,7 @@ export default function Profile() {
               {user.firstName || "-"} {user.lastName || "-"}
             </h2>
             <div className="mt-1">
-              <span className="pill-role">{user.position || "ตำแหน่ง - "}</span>
+              <span className="pill-role">{user.role || "ตำแหน่ง - "}</span>
             </div>
           </div>
           <div className="ms-auto d-flex gap-2">
@@ -223,9 +223,7 @@ export default function Profile() {
               <>
                 <button
                   className="btn btn-outline-light"
-                  onClick={() => {
-                    setIsEditing(false);
-                  }}
+                  onClick={() => setIsEditing(false)}
                 >
                   ยกเลิก
                 </button>
@@ -291,18 +289,18 @@ export default function Profile() {
                 <label className="form-label">รหัสพนักงาน</label>
                 <input
                   className="form-control"
-                  value={user.employeeId}
+                  value={user.serviceID}
                   disabled={!isEditing}
-                  onChange={(e) => onChange("employeeId", e.target.value)}
+                  onChange={(e) => onChange("serviceID", e.target.value)}
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label">ตำแหน่ง</label>
                 <input
                   className="form-control"
-                  value={user.position}
+                  value={user.role}
                   disabled={!isEditing}
-                  onChange={(e) => onChange("position", e.target.value)}
+                  onChange={(e) => onChange("role", e.target.value)}
                 />
               </div>
               <div className="col-md-6">
@@ -316,7 +314,7 @@ export default function Profile() {
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label">อายุ </label>
+                <label className="form-label">อายุ</label>
                 <input className="form-control" value={age || ""} disabled />
               </div>
               <div className="col-md-6">
@@ -376,6 +374,385 @@ export default function Profile() {
     </div>
   );
 }
+
+// import React, { useEffect, useMemo, useState } from "react";
+// import dayjs from "dayjs";
+// import axios from "axios";
+// import "bootstrap/dist/css/bootstrap.min.css";
+// // import "@fortawesome/fontawesome-free/css/all.min.css";
+
+// const DEFAULT_USER = {
+//   firstName: "",
+//   lastName: "",
+//   employeeId: "",
+//   birthDate: "", // YYYY-MM-DD
+//   username: "",
+//   email: "",
+//   lineId: "",
+//   phone: "",
+//   position: "",
+//   avatar: "", // base64 dataURL
+// };
+
+// export default function Profile() {
+//   const [user, setUser] = useState(DEFAULT_USER);
+//   const [isEditing, setIsEditing] = useState(false);
+//   const [saved, setSaved] = useState(false);
+//   const [loading, setLoading] = useState(true);
+
+//   // ฟังก์ชันสำหรับดึงข้อมูลผู้ใช้จาก API
+//   const getData = async () => {
+//     try {
+//       const token = localStorage.getItem("token");
+//       if (!token) {
+//         console.error("No token found in localStorage.");
+//         setLoading(false);
+//         return;
+//       }
+
+//       const res = await axios.get("http://localhost:5000/profile", {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       });
+
+//       // อัปเดต state ด้วยข้อมูลที่ได้จาก API
+//       const userFromApi = res.data;
+//       setUser((prev) => ({
+//         ...prev,
+//         firstName: userFromApi.firstName || userFromApi.name || prev.firstName,
+//         lastName: userFromApi.lastName || userFromApi.surname || prev.lastName,
+//         employeeId:
+//           userFromApi.employeeId || userFromApi.empId || prev.employeeId,
+//         birthDate: userFromApi.birthDate || userFromApi.dob || prev.birthDate,
+//         username: userFromApi.username || prev.username,
+//         email: userFromApi.email || prev.email,
+//         lineId: userFromApi.lineId || userFromApi.line || prev.lineId,
+//         phone:
+//           userFromApi.phone ||
+//           userFromApi.tel ||
+//           userFromApi.mobile ||
+//           prev.phone,
+//         position: userFromApi.position || userFromApi.role || prev.position,
+//         avatar: userFromApi.avatar || prev.avatar,
+//       }));
+//     } catch (error) {
+//       console.error("Failed to fetch user data from API:", error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     // โค้ดเดิมที่ดึงจาก localStorage
+//     const raw = localStorage.getItem("user");
+//     if (raw) {
+//       try {
+//         const parsed = JSON.parse(raw);
+//         setUser((prev) => ({
+//           ...prev,
+//           firstName: parsed.firstName || parsed.name || prev.firstName,
+//           lastName: parsed.lastName || parsed.surname || prev.lastName,
+//           employeeId: parsed.employeeId || parsed.empId || prev.employeeId,
+//           birthDate: parsed.birthDate || parsed.dob || prev.birthDate,
+//           username: parsed.username || prev.username,
+//           email: parsed.email || prev.email,
+//           lineId: parsed.lineId || parsed.line || prev.lineId,
+//           phone: parsed.phone || parsed.tel || parsed.mobile || prev.phone,
+//           position: parsed.position || parsed.role || prev.position,
+//           avatar: parsed.avatar || prev.avatar,
+//         }));
+//       } catch (e) {
+//         console.error("Failed to parse user data from localStorage:", e);
+//       }
+//     }
+
+//     // เรียกใช้ฟังก์ชัน getData เพื่อดึงข้อมูลล่าสุดจาก API
+//     getData();
+//   }, []);
+
+//   const age = useMemo(() => {
+//     if (!user.birthDate) return "";
+//     const b = dayjs(user.birthDate);
+//     if (!b.isValid()) return "";
+//     return dayjs().diff(b, "year");
+//   }, [user.birthDate]);
+
+//   const onChange = (key, val) => {
+//     setUser((u) => ({ ...u, [key]: val }));
+//   };
+
+//   const onPickAvatar = (file) => {
+//     if (!file) return;
+//     const reader = new FileReader();
+//     reader.onload = () => {
+//       onChange("avatar", reader.result);
+//     };
+//     reader.readAsDataURL(file);
+//   };
+
+//   const onSave = () => {
+//     const next = { ...user };
+//     localStorage.setItem("user", JSON.stringify(next));
+//     if (next.username) {
+//       localStorage.setItem("username", next.username);
+//     }
+//     setIsEditing(false);
+//     setSaved(true);
+//     setTimeout(() => setSaved(false), 2000);
+//   };
+
+//   if (loading) {
+//     return (
+//       <div
+//         className="d-flex justify-content-center align-items-center"
+//         style={{ height: "100vh" }}
+//       >
+//         <div className="spinner-border text-primary" role="status">
+//           <span className="visually-hidden">Loading...</span>
+//         </div>
+//         <div className="ms-2">กำลังโหลดข้อมูล...</div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="container py-4">
+//       <style>{`
+//         :root{
+//           --g1:#312e81;
+//           --g2:#0e7490;
+//           --g3:#166534;
+//         }
+//         @keyframes bannerGradient{
+//           0%{ background-position: 0% 50%; }
+//           50%{ background-position: 100% 50%; }
+//           100%{ background-position: 0% 50%; }
+//         }
+//         .profile-banner{
+//           background: linear-gradient(120deg, var(--g1), var(--g2), var(--g3));
+//           background-size: 300% 300%;
+//           animation: bannerGradient 14s ease infinite;
+//           border-radius: 1rem;
+//           padding: 1.25rem;
+//           color: #fff;
+//           box-shadow: 0 10px 24px rgba(0,0,0,.12);
+//         }
+//         .profile-card{
+//           border: none;
+//           border-radius: 1rem;
+//           box-shadow: 0 6px 18px rgba(0,0,0,.08);
+//         }
+//         .avatar-wrap{
+//           width: 140px; height: 140px; border-radius: 999px;
+//           overflow: hidden; background: rgba(255,255,255,.2);
+//           display:flex; align-items:center; justify-content:center;
+//           border: 2px solid rgba(255,255,255,.35);
+//         }
+//         .avatar-wrap img{ width:100%; height:100%; object-fit: cover; }
+//         .avatar-fallback{
+//           font-size: 48px; font-weight: 700; color:#fff;
+//         }
+//         .btn-gradient{
+//           background: linear-gradient(120deg, var(--g2), var(--g3));
+//           color: #fff; border: none;
+//         }
+//         .btn-gradient:hover{ filter: brightness(1.05); }
+//         .label-sm{ font-size:.9rem; color:#6b7280; }
+//         .value-lg{ font-size: 1.05rem; font-weight: 600; color:#111827; }
+//         .pill-role{
+//           display:inline-block; padding:.35rem .65rem;
+//           border-radius:999px; background:rgba(255,255,255,.25); color:#fff;
+//           border:1px solid rgba(255,255,255,.35);
+//         }
+//         .form-control, .form-select{
+//           border-radius:.75rem;
+//         }
+//       `}</style>
+//       <div className="profile-banner mb-4">
+//         <div className="d-flex align-items-center gap-3">
+//           <div className="avatar-wrap">
+//             {user.avatar ? (
+//               <img src={user.avatar} alt="avatar" />
+//             ) : (
+//               <div className="avatar-fallback">
+//                 {(user.username || "U").charAt(0).toUpperCase()}
+//               </div>
+//             )}
+//           </div>
+//           <div>
+//             <h2 className="m-0">
+//               {user.firstName || "-"} {user.lastName || "-"}
+//             </h2>
+//             <div className="mt-1">
+//               <span className="pill-role">{user.position || "ตำแหน่ง - "}</span>
+//             </div>
+//           </div>
+//           <div className="ms-auto d-flex gap-2">
+//             {!isEditing ? (
+//               <button
+//                 className="btn btn-gradient"
+//                 onClick={() => setIsEditing(true)}
+//               >
+//                 แก้ไขข้อมูล
+//               </button>
+//             ) : (
+//               <>
+//                 <button
+//                   className="btn btn-outline-light"
+//                   onClick={() => {
+//                     setIsEditing(false);
+//                   }}
+//                 >
+//                   ยกเลิก
+//                 </button>
+//                 <button className="btn btn-gradient" onClick={onSave}>
+//                   บันทึก
+//                 </button>
+//               </>
+//             )}
+//           </div>
+//         </div>
+//         {saved && <div className="mt-2 small">✅ บันทึกข้อมูลเรียบร้อย</div>}
+//       </div>
+//       <div className="row g-4">
+//         <div className="col-lg-4">
+//           <div className="card profile-card p-3">
+//             <h5 className="mb-3">รูปภาพผู้ใช้งาน</h5>
+//             <div className="d-flex flex-column align-items-center gap-3">
+//               <div className="avatar-wrap" style={{ width: 180, height: 180 }}>
+//                 {user.avatar ? (
+//                   <img src={user.avatar} alt="avatar" />
+//                 ) : (
+//                   <div className="avatar-fallback">
+//                     {(user.username || "U").charAt(0).toUpperCase()}
+//                   </div>
+//                 )}
+//               </div>
+//               <div className="w-100">
+//                 <label className="form-label">อัปโหลดรูปใหม่</label>
+//                 <input
+//                   type="file"
+//                   accept="image/*"
+//                   className="form-control"
+//                   disabled={!isEditing}
+//                   onChange={(e) => onPickAvatar(e.target.files?.[0])}
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//         <div className="col-lg-8">
+//           <div className="card profile-card p-3">
+//             <h5 className="mb-3">ข้อมูลผู้ใช้งาน</h5>
+//             <div className="row g-3">
+//               <div className="col-md-6">
+//                 <label className="form-label">ชื่อ (First name)</label>
+//                 <input
+//                   className="form-control"
+//                   value={user.firstName}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("firstName", e.target.value)}
+//                 />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">นามสกุล (Last name)</label>
+//                 <input
+//                   className="form-control"
+//                   value={user.lastName}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("lastName", e.target.value)}
+//                 />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">รหัสพนักงาน</label>
+//                 <input
+//                   className="form-control"
+//                   value={user.employeeId}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("employeeId", e.target.value)}
+//                 />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">ตำแหน่ง</label>
+//                 <input
+//                   className="form-control"
+//                   value={user.position}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("position", e.target.value)}
+//                 />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">วันเกิด</label>
+//                 <input
+//                   type="date"
+//                   className="form-control"
+//                   value={user.birthDate || ""}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("birthDate", e.target.value)}
+//                 />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">อายุ </label>
+//                 <input className="form-control" value={age || ""} disabled />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">Username</label>
+//                 <input
+//                   className="form-control"
+//                   value={user.username}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("username", e.target.value)}
+//                 />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">Email</label>
+//                 <input
+//                   type="email"
+//                   className="form-control"
+//                   value={user.email}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("email", e.target.value)}
+//                 />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">Line ID</label>
+//                 <input
+//                   className="form-control"
+//                   value={user.lineId}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("lineId", e.target.value)}
+//                 />
+//               </div>
+//               <div className="col-md-6">
+//                 <label className="form-label">เบอร์โทร</label>
+//                 <input
+//                   className="form-control"
+//                   value={user.phone}
+//                   disabled={!isEditing}
+//                   onChange={(e) => onChange("phone", e.target.value)}
+//                 />
+//               </div>
+//             </div>
+//             {isEditing && (
+//               <div className="mt-3 d-flex justify-content-end gap-2">
+//                 <button
+//                   className="btn btn-outline-secondary"
+//                   onClick={() => setIsEditing(false)}
+//                 >
+//                   ยกเลิก
+//                 </button>
+//                 <button className="btn btn-gradient" onClick={onSave}>
+//                   บันทึก
+//                 </button>
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 // // src/pages/ProfilePage.jsx
 // import React, { useEffect, useMemo, useState } from "react";

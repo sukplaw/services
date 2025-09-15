@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./App1.css";
-// import "./components/ShowDetail.css";
+import "./components/ShowDetail.css";
 import "./components/other/Navbar.css";
 // import "./ShowDetail.css";
 import { Route, Routes } from "react-router-dom";

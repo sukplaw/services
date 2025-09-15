@@ -117,7 +117,7 @@ export default function Job() {
           `http://localhost:3302/update-status/${jobRef}`,
           {
             jobStatus: newStatus,
-            updateBy: currentUser,
+            latestUpdateBy: currentUser,
           },
           {
             headers: {
@@ -337,15 +337,15 @@ export default function Job() {
 
     {
       title: "วันที่แก้ไขสถานะล่าสุด",
-      dataIndex: "updateAt",
-      key: "updateAt",
+      dataIndex: "latestUpdateAt",
+      key: "latestUpdateAt",
       align: "center",
       render: (d) => new Date(d).toLocaleDateString("th-TH"),
     },
     {
       title: "ผู้แก้ไขสถานะล่าสุด",
-      dataIndex: "updateBy",
-      key: "updateBy",
+      dataIndex: "latestUpdateBy",
+      key: "latestUpdateBy",
       align: "center",
       width: 100,
     },
@@ -375,8 +375,8 @@ export default function Job() {
       "jobStatus",
       "createAt",
       "remainingTime",
-      "updateAt",
-      "updateBy",
+      "latestUpdateAt",
+      "latestUpdateBy",
     ];
     const matchesSearch = searchableFields.some(
       (f) =>
@@ -397,7 +397,7 @@ export default function Job() {
         item.jobStatus === "จัดส่งสำเร็จ" ||
         item.jobStatus === "ยกเลิกการเคลมสินค้า"
       )
-        baseDate = new Date(item.updateAt);
+        baseDate = new Date(item.latestUpdateAt);
       else baseDate = new Date();
       const remainingTimeInMilliseconds =
         expectedDate.getTime() - baseDate.getTime();
@@ -567,8 +567,8 @@ export default function Job() {
                 "jobStatus",
                 "createAt",
                 "remainingTime",
-                "updateAt",
-                "updateBy",
+                "latestUpdateAt",
+                "latestUpdateBy",
               ];
               const matchesSearch = searchableFields.some(
                 (f) =>
@@ -722,7 +722,7 @@ export default function Job() {
 //           `http://localhost:3302/update-status/${jobRef}`,
 //           {
 //             jobStatus: newStatus,
-//             updateBy: currentUser,
+//             latestUpdateBy: currentUser,
 //           },
 //           {
 //             headers: {
@@ -942,15 +942,15 @@ export default function Job() {
 
 //     {
 //       title: "วันที่แก้ไขสถานะล่าสุด",
-//       dataIndex: "updateAt",
-//       key: "updateAt",
+//       dataIndex: "latestUpdateAt",
+//       key: "latestUpdateAt",
 //       align: "center",
 //       render: (d) => new Date(d).toLocaleDateString("th-TH"),
 //     },
 //     {
 //       title: "ผู้แก้ไขสถานะล่าสุด",
-//       dataIndex: "updateBy",
-//       key: "updateBy",
+//       dataIndex: "latestUpdateBy",
+//       key: "latestUpdateBy",
 //       align: "center",
 //       width: 100,
 //     },
@@ -980,8 +980,8 @@ export default function Job() {
 //       "jobStatus",
 //       "createAt",
 //       "remainingTime",
-//       "updateAt",
-//       "updateBy",
+//       "latestUpdateAt",
+//       "latestUpdateBy",
 //     ];
 //     const matchesSearch = searchableFields.some(
 //       (f) =>
@@ -1002,7 +1002,7 @@ export default function Job() {
 //         item.jobStatus === "จัดส่งสำเร็จ" ||
 //         item.jobStatus === "ยกเลิกการเคลมสินค้า"
 //       )
-//         baseDate = new Date(item.updateAt);
+//         baseDate = new Date(item.latestUpdateAt);
 //       else baseDate = new Date();
 //       const remainingTimeInMilliseconds =
 //         expectedDate.getTime() - baseDate.getTime();
@@ -1158,8 +1158,8 @@ export default function Job() {
 //                 "jobStatus",
 //                 "createAt",
 //                 "remainingTime",
-//                 "updateAt",
-//                 "updateBy",
+//                 "latestUpdateAt",
+//                 "latestUpdateBy",
 //               ];
 //               const matchesSearch = searchableFields.some(
 //                 (f) =>
@@ -1342,7 +1342,7 @@ export default function Job() {
 //           `http://localhost:3302/update-status/${jobRef}`,
 //           {
 //             jobStatus: newStatus,
-//             updateBy: currentUser, // ✅ เพิ่ม updateBy
+//             latestUpdateBy: currentUser, // ✅ เพิ่ม latestUpdateBy
 //           },
 //           {
 //             headers: {
@@ -1567,15 +1567,15 @@ export default function Job() {
 //     },
 //     {
 //       title: "วันที่แก้ไขสถานะล่าสุด",
-//       dataIndex: "updateAt",
-//       key: "updateAt",
+//       dataIndex: "latestUpdateAt",
+//       key: "latestUpdateAt",
 //       align: "center",
 //       render: (date) => new Date(date).toLocaleDateString("th-TH"),
 //     },
 //     {
 //       title: "ผู้แก้ไขสถานะล่าสุด",
-//       dataIndex: "updateBy",
-//       key: "updateBy",
+//       dataIndex: "latestUpdateBy",
+//       key: "latestUpdateBy",
 //       align: "center",
 //     },
 //   ];
@@ -1653,8 +1653,8 @@ export default function Job() {
 //       "jobStatus",
 //       "createAt",
 //       "remainingTime",
-//       "updateAt",
-//       "updateBy",
+//       "latestUpdateAt",
+//       "latestUpdateBy",
 //     ];
 //     const matchesSearch = searchableFields.some((field) => {
 //       const fieldValue = item[field];
@@ -1673,10 +1673,10 @@ export default function Job() {
 
 //   // const countRemainingTime = (filterData) => {
 //   //   return filterData.map((item) => {
-//   //     const updateAt = new Date(item.expected_completion_date);
+//   //     const latestUpdateAt = new Date(item.expected_completion_date);
 //   //     const createAt = new Date();
 //   //     const remainingTimeInMilliseconds =
-//   //       updateAt.getTime() - createAt.getTime();
+//   //       latestUpdateAt.getTime() - createAt.getTime();
 //   //     const remainingTimeInDays = Math.floor(
 //   //       remainingTimeInMilliseconds / (1000 * 60 * 60 * 24)
 //   //     );
@@ -1697,7 +1697,7 @@ export default function Job() {
 //         item.jobStatus === "จัดส่งสำเร็จ" ||
 //         item.jobStatus === "ยกเลิกการเคลมสินค้า"
 //       ) {
-//         baseDate = new Date(item.updateAt); // วันที่แก้ไขสถานะล่าสุด
+//         baseDate = new Date(item.latestUpdateAt); // วันที่แก้ไขสถานะล่าสุด
 //       } else {
 //         baseDate = new Date(); // วันที่ปัจจุบัน
 //       }
@@ -2175,15 +2175,15 @@ export default function Job() {
 //     },
 //     {
 //       title: "วันที่แก้ไขสถานะล่าสุด",
-//       dataIndex: "updateAt",
-//       key: "updateAt",
+//       dataIndex: "latestUpdateAt",
+//       key: "latestUpdateAt",
 //       align: "center",
 //       render: (date) => new Date(date).toLocaleDateString("th-TH"),
 //     },
 //     {
 //       title: "ผู้แก้ไขสถานะล่าสุด",
-//       dataIndex: "updateBy",
-//       key: "updateBy",
+//       dataIndex: "latestUpdateBy",
+//       key: "latestUpdateBy",
 //       align: "center",
 //     },
 //   ];
@@ -2257,8 +2257,8 @@ export default function Job() {
 //       "jobStatus",
 //       "createAt",
 //       "remainingTime",
-//       "updateAt",
-//       "updateBy",
+//       "latestUpdateAt",
+//       "latestUpdateBy",
 //     ];
 //     const matchesSearch = searchableFields.some((field) => {
 //       const fieldValue = item[field];
@@ -2277,10 +2277,10 @@ export default function Job() {
 
 //   // const countRemainingTime = (filterData) => {
 //   //   return filterData.map((item) => {
-//   //     const updateAt = new Date(item.expected_completion_date);
+//   //     const latestUpdateAt = new Date(item.expected_completion_date);
 //   //     const createAt = new Date();
 //   //     const remainingTimeInMilliseconds =
-//   //       updateAt.getTime() - createAt.getTime();
+//   //       latestUpdateAt.getTime() - createAt.getTime();
 //   //     const remainingTimeInDays = Math.floor(
 //   //       remainingTimeInMilliseconds / (1000 * 60 * 60 * 24)
 //   //     );
@@ -2301,7 +2301,7 @@ export default function Job() {
 //         item.jobStatus === "จัดส่งสำเร็จ" ||
 //         item.jobStatus === "ยกเลิกการเคลมสินค้า"
 //       ) {
-//         baseDate = new Date(item.updateAt); // วันที่แก้ไขสถานะล่าสุด
+//         baseDate = new Date(item.latestUpdateAt); // วันที่แก้ไขสถานะล่าสุด
 //       } else {
 //         baseDate = new Date(); // วันที่ปัจจุบัน
 //       }
@@ -2675,8 +2675,8 @@ export default function Job() {
 //     },
 //     {
 //       title: "วันที่แก้ไขสถานะล่าสุด",
-//       dataIndex: "updateAt",
-//       key: "updateAt",
+//       dataIndex: "latestUpdateAt",
+//       key: "latestUpdateAt",
 //       render: (date) => new Date(date).toLocaleDateString("th-TH"),
 //     },
 //     {
@@ -2755,7 +2755,7 @@ export default function Job() {
 //       "jobStatus",
 //       "createAt",
 //       "remainingTime",
-//       "updateAt",
+//       "latestUpdateAt",
 //       "updatedBy",
 //     ];
 //     const matchesSearch = searchableFields.some((field) => {
@@ -2775,10 +2775,10 @@ export default function Job() {
 
 //   // const countRemainingTime = (filterData) => {
 //   //   return filterData.map((item) => {
-//   //     const updateAt = new Date(item.expected_completion_date);
+//   //     const latestUpdateAt = new Date(item.expected_completion_date);
 //   //     const createAt = new Date();
 //   //     const remainingTimeInMilliseconds =
-//   //       updateAt.getTime() - createAt.getTime();
+//   //       latestUpdateAt.getTime() - createAt.getTime();
 //   //     const remainingTimeInDays = Math.floor(
 //   //       remainingTimeInMilliseconds / (1000 * 60 * 60 * 24)
 //   //     );
@@ -2799,7 +2799,7 @@ export default function Job() {
 //         item.jobStatus === "จัดส่งสำเร็จ" ||
 //         item.jobStatus === "ยกเลิกการเคลมสินค้า"
 //       ) {
-//         baseDate = new Date(item.updateAt); // วันที่แก้ไขสถานะล่าสุด
+//         baseDate = new Date(item.latestUpdateAt); // วันที่แก้ไขสถานะล่าสุด
 //       } else {
 //         baseDate = new Date(); // วันที่ปัจจุบัน
 //       }
@@ -3121,8 +3121,8 @@ export default function Job() {
 //     },
 //     {
 //       title: "วันที่แก้ไขสถานะล่าสุด",
-//       dataIndex: "updateAt",
-//       key: "updateAt",
+//       dataIndex: "latestUpdateAt",
+//       key: "latestUpdateAt",
 //       render: (date) => new Date(date).toLocaleDateString("th-TH"),
 //     },
 //     {
@@ -3190,7 +3190,7 @@ export default function Job() {
 //       "jobStatus",
 //       "createAt",
 //       "remainingTime",
-//       "updateAt",
+//       "latestUpdateAt",
 //       "updatedBy",
 //     ];
 //     const matchesSearch = searchableFields.some((field) => {
@@ -3210,10 +3210,10 @@ export default function Job() {
 
 //   const countRemainingTime = (filterData) => {
 //     return filterData.map((item) => {
-//       const updateAt = new Date(item.expected_completion_date);
+//       const latestUpdateAt = new Date(item.expected_completion_date);
 //       const createAt = new Date();
 //       const remainingTimeInMilliseconds =
-//         updateAt.getTime() - createAt.getTime();
+//         latestUpdateAt.getTime() - createAt.getTime();
 //       const remainingTimeInDays = Math.floor(
 //         remainingTimeInMilliseconds / (1000 * 60 * 60 * 24)
 //       );

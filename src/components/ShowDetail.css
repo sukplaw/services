@@ -1,0 +1,107 @@
+/* .claim-view{
+  --indigo:#4f46e5; --cyan:#06b6d4;
+  --slate-900:#0f172a; --slate-700:#334155; --slate-500:#64748b;
+}
+
+/* หัวข้อใน Card */
+.claim-view .section-title{
+  display:flex; align-items:center; gap:10px;
+  font-weight:800; font-size:1.25rem; color:var(--slate-700);
+  margin:6px 0 10px; padding:6px 10px; border-radius:12px;
+  background:linear-gradient(90deg, rgba(79,70,229,.08), rgba(6,182,212,.08));
+}
+.claim-view .section-title-icon{ font-size:1.3rem; color:var(--indigo); }
+
+/* กล่องรายละเอียด */
+.claim-view .section-card{
+  /* background:#fff; border:1px solid #e9edf9; border-left:6px solid var(--indigo); */
+  border-radius:16px; padding:12px; box-shadow:0 8px 20px rgba(79,70,229,.06);
+  font-size:1.06rem; color:var(--slate-900);
+}
+
+/* กริดข้อมูล: กระชับ ไม่เว้นโล่ง */
+.claim-view .details-grid{
+  display:grid; 
+  grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+  gap:10px 14px;
+}
+
+/* แถว label-value */
+.claim-view .kv{
+  display:grid; grid-template-columns:120px 1fr; align-items:center;
+  background:#fff; border:1px solid #eef1fb; border-radius:12px; padding:8px 10px;
+}
+@media (min-width:1200px){ .claim-view .kv{ grid-template-columns:140px 1fr; } }
+.claim-view .kv .label{ color:var(--slate-500); font-weight:700; }
+.claim-view .kv .value{ color:var(--slate-900); font-weight:600; word-break:break-word; white-space:pre-line; }
+
+/* ฟิลด์ยาวให้กิน 2 คอลัมน์เมื่อจอกว้าง */
+@media (min-width:700px){ .claim-view .kv-span-2{ grid-column: span 2; } }
+
+/* แท็ก */
+.claim-view .chip{ display:inline-block; padding:4px 10px; border-radius:999px; background:#eef7ff; border:1px solid #e0ecff; font-weight:700; }
+.claim-view .chip-indigo{ background:#eef2ff; border-color:#e0e7ff; }
+
+/* Media */
+.claim-view .media-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin-top:12px; }
+.claim-view .media-card{ background:#fff; border:1px solid #e9edf9; border-radius:14px; padding:12px; }
+.claim-view .media-title{ font-weight:800; color:var(--slate-700); margin-bottom:8px; }
+.claim-view .btn-show-image{ display:flex; align-items:center; gap:8px; font-weight:700!important; border:none!important; border-radius:12px!important; padding:10px 14px!important; background:linear-gradient(90deg,var(--indigo),var(--cyan))!important; color:#fff!important; box-shadow:0 8px 18px rgba(6,182,212,.18); transition:transform .08s ease; }
+.claim-view .btn-show-image:active{ transform:scale(.98); }
+.claim-view .button-icon{ font-size:1.2rem; }
+.claim-view .media-collapse{ margin-top:10px; }
+.claim-view .gallery-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+.claim-view .gallery-img{ width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px; border:1px solid #e8eaf5; box-shadow:0 6px 16px rgba(15,23,42,.06); }
+.claim-view .empty-text{ color:var(--slate-500); margin:6px 0 0 2px; }
+
+/* ระยะห่าง */
+.claim-view .section-title + .section-card{ margin-top:8px; }
+.claim-view .section-card + .section-title{ margin-top:14px; }
+ */
+
+/* โครงพื้นฐาน + มุมโค้ง */
+.acc-custom .acc-item{
+  border:1px solid #f0f2f6;
+  border-radius:20px !important;
+  overflow:hidden;                    /* สำคัญ: ให้มุมมนตอนกาง */
+}
+.acc-custom .acc-item + .acc-item{ margin-top:12px; }
+
+.acc-custom .accordion-button{
+  font-weight:800; font-size:1.05rem; padding:12px 16px;
+  box-shadow:none; transition:filter .15s ease;
+  border-radius:20px !important;      /* โค้งเวลาพับ */
+}
+/* เมื่อกาง ให้ตัดส่วนล่างเพื่อแนบกับ body */
+.acc-custom .accordion-button:not(.collapsed){
+  border-bottom-left-radius:0 !important;
+  border-bottom-right-radius:0 !important;
+}
+
+/* ไอคอน caret ให้มองเห็นบนพื้นเข้ม */
+.acc-custom .accordion-button::after{ filter: invert(1); }
+.acc-custom .acc-item .acc-icon{ color:#fff; }
+
+/* ---------- ธีม ลูกค้า (ส้มเข้ม / ส้มอ่อน) ---------- */
+.acc-custom .acc-customer .accordion-button,
+.acc-custom .acc-customer .accordion-button:not(.collapsed){
+  background:#126B8E;   /* header: ส้มเข้ม */
+  color:#fff;
+}
+.acc-custom .acc-customer .accordion-body{
+  background:#DDF1FC;   /* body: ส้มอ่อน */
+  border-top:1px solid #E7F0F4;
+  padding:12px 16px;
+}
+
+/* ---------- ธีม สินค้า (แดงเข้ม / ชมพูอ่อน) ---------- */
+.acc-custom .acc-product .accordion-button,
+.acc-custom .acc-product .accordion-button:not(.collapsed){
+  background:#116E6C;   /* header: แดงเข้ม */
+  color:#fff;
+}
+.acc-custom .acc-product .accordion-body{
+  background:#d5fffe;   /* body: แดง/ชมพูอ่อน */
+  border-top:1px solid #FAD1D1;
+  padding:12px 16px;
+}

@@ -1,48 +1,69 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import axios from "axios";
 import {
+  Card,
+  Row,
+  Col,
+  Space,
+  Dropdown,
+  Button,
   Form,
   Input,
   InputNumber,
+  Descriptions,
+  Timeline,
+  Tag,
+  Collapse,
   Select,
-  Button,
   Upload,
   message,
-  Timeline,
+  Image,
 } from "antd";
-import axios from "axios";
-import Accordion from "react-bootstrap/Accordion";
-import { MdOutlineDescription } from "react-icons/md";
-import { IoMdPeople } from "react-icons/io";
-import { PiPackageFill } from "react-icons/pi";
 import {
   CheckCircleTwoTone,
   ClockCircleOutlined,
-  ExclamationCircleTwoTone,
   CloseCircleTwoTone,
+  SaveOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  PictureOutlined,
+  DownOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
+
+import {
+  FaRegLightbulb,
+  FaTools,
+  FaCheck,
+  FaFileAlt,
+  FaTruck,
+  FaTruckLoading,
+  FaRegClock,
+  FaDownload,
+  FaTrashAlt,
+  FaEdit,
+  FaImages,
+} from "react-icons/fa";
 import { IoImage } from "react-icons/io5";
-import Card from "react-bootstrap/Card";
-import Collapse from "react-bootstrap/Collapse";
-import Carousel from "react-bootstrap/Carousel";
-import { FaRegSave } from "react-icons/fa";
-import "../";
+import { IoMdPeople } from "react-icons/io";
+import { MdBorderColor } from "react-icons/md";
+import { TbBasketCancel } from "react-icons/tb";
+import Accordion from "react-bootstrap/Accordion";
+import { PiPackageFill } from "react-icons/pi";
 
 const { Dragger } = Upload;
 const { Option } = Select;
+const { Panel } = Collapse;
 
 export default function ShowDetail() {
   const [data, setData] = useState([]);
-  const [open, setOpen] = useState(false);
-  const [openClaim, setopenClaim] = useState(false);
+  const [open, setOpen] = useState(false); // product images
+  const [openClaim, setopenClaim] = useState(false); // claim images
   const { jobRef } = useParams();
-
+  const [uploadedUrls, setUploadedUrls] = useState([]);
   // none | status | customer | product
   const [editMode, setEditMode] = useState("none");
-
-  const [isEditDropdownOpen, setIsEditDropdownOpen] = useState(false);
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const [isDetailDropdownOpen, setIsDetailDropdownOpen] = useState(false);
 
   const [changedStatus, setChangedStatus] = useState({});
 
@@ -59,10 +80,6 @@ export default function ShowDetail() {
           ? response.data
           : [response.data];
         setData(responseData);
-        const token = localStorage.getItem("token");
-        console.log(token);
-        console.log(responseData);
-        console.log(response.data.images);
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
@@ -74,14 +91,58 @@ export default function ShowDetail() {
     const url = `http://localhost:3302/delete-job/${jobRef}`;
     axios
       .delete(url)
-      .then((res) => {
+      .then(() => {
         message.success("ข้อมูลถูกลบเรียบร้อยแล้ว");
-        console.log(res.jobRef);
       })
       .catch((error) => {
         message.error("เกิดข้อผิดพลาดในการลบข้อมูล");
         console.error("Error deleting job:", error);
       });
+  };
+
+  const uploadProps = {
+    name: "imageFile",
+    multiple: false,
+    action: "http://localhost:3303/upload",
+    listType: "picture",
+    onChange(info) {
+      const { status } = info.file;
+      if (status === "done") {
+        message.success(`${info.file.name} อัปโหลดสำเร็จ.`);
+        const imageUrl = info.file.response.url;
+        setUploadedUrls((prev) => [...prev, imageUrl]);
+      } else if (status === "error") {
+        message.error(`${info.file.name} อัปโหลดไม่สำเร็จ.`);
+      }
+    },
+  };
+
+  // ✅ ส่ง remark + รูปภาพ + สถานะล่าสุด
+  const updateRemark = async (jobRef, jobData) => {
+    const url = `http://localhost:3302/update-remark/${jobRef}`;
+    try {
+      await axios.put(url, jobData);
+      message.success("เพิ่มหมายเหตุและรูปภาพเพิ่มเติมสำเร็จ!");
+      form.resetFields();
+      getData();
+    } catch (error) {
+      message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
+      console.error("Error updating job:", error);
+    }
+  };
+
+  const onFinish = (values) => {
+    const jobRefVal = data[0]?.jobRef;
+    if (!jobRefVal) {
+      message.warning("ไม่พบ jobRef ที่จะอัปเดต");
+      return;
+    }
+    const jobData = {
+      remark: values.Remark,
+      images: uploadedUrls || [],
+      jobStatus: latestStatus || "",
+    };
+    updateRemark(jobRefVal, jobData);
   };
 
   useEffect(() => {
@@ -115,7 +176,7 @@ export default function ShowDetail() {
     }
   }, [data, customerForm, productForm]);
 
-  // ลำดับสถานะมาตรฐาน (ห้ามข้าม)
+  // ===== Status helpers =====
   const statusOrder = [
     "เริ่มงาน",
     "สั่งอะไหล่",
@@ -126,7 +187,53 @@ export default function ShowDetail() {
     "จัดส่งสำเร็จ",
   ];
   const CANCEL_STATUS = "ยกเลิกการเคลมสินค้า";
-  const DONE_ALIASES = new Set(["จัดส่งสำเร็จ", "จบงาน"]); // รองรับทั้ง "จบงาน" และ "จัดส่งสำเร็จ"
+  const DONE_ALIASES = new Set(["จัดส่งสำเร็จ", "จบงาน"]);
+
+  // ===== Visual helpers for Timeline =====
+  const getLevelColor = (idx, total) => {
+    // Smooth hue ramp from teal (200) to pink (340)
+    const startHue = 200;
+    const endHue = 340;
+    const t = total > 1 ? idx / (total - 1) : 0;
+    const hue = Math.round(startHue + (endHue - startHue) * t);
+    return `hsl(${hue}, 70%, 50%)`;
+  };
+
+  // Soft color set for item backgrounds/borders/text
+  const getSoftColors = (idx, total) => {
+    const startHue = 200;
+    const endHue = 340;
+    const t = total > 1 ? idx / (total - 1) : 0;
+    const hue = Math.round(startHue + (endHue - startHue) * t);
+    return {
+      bg: `hsla(${hue}, 85%, 92%, 0.9)`,
+      border: `hsl(${hue}, 70%, 75%)`,
+      text: `hsl(${hue}, 70%, 35%)`,
+    };
+  };
+
+  // ✅ แก้ไข: รวมฟังก์ชันที่ซ้ำกัน
+  const getStatusDot = (status, color) => {
+    const iconStyle = { color };
+    switch (status) {
+      case "เริ่มงาน":
+        return <FaRegLightbulb twoToneColor={color} style={{ fontSize: 22 }} />;
+      case "สั่งอะไหล่":
+        return <MdBorderColor style={{ ...iconStyle, fontSize: 22 }} />;
+      case "เริ่มการซ่อม":
+        return <MdBorderColor style={{ ...iconStyle, fontSize: 22 }} />;
+      case "ซ่อมสำเร็จ":
+        return <FaTools twoToneColor={color} style={{ fontSize: 22 }} />;
+      case "รอทดสอบ":
+        return <FaFileAlt style={{ ...iconStyle, fontSize: 22 }} />;
+      case "รอจัดส่ง":
+        return <FaTruck style={{ ...iconStyle, fontSize: 22 }} />;
+      case "จัดส่งสำเร็จ":
+        return <FaTruckLoading twoToneColor={color} style={{ fontSize: 22 }} />;
+      default:
+        return <TbBasketCancel twoToneColor={color} style={{ fontSize: 22 }} />;
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -140,7 +247,6 @@ export default function ShowDetail() {
     return `วันที่: ${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   };
 
-  // หา "สถานะล่าสุด" จาก updateAt (กรณี API ให้มาหลายแถว)
   const latestItem = useMemo(() => {
     if (!data || data.length === 0) return null;
     return [...data].sort(
@@ -151,92 +257,83 @@ export default function ShowDetail() {
   const latestStatus = latestItem?.jobStatus;
   const isCancelled = latestStatus === CANCEL_STATUS;
   const isDone = !!latestStatus && DONE_ALIASES.has(latestStatus);
-  const isLocked = isCancelled || isDone; // ล็อกการแก้ไขเมื่อยกเลิกหรือจบงาน
-
-  // ไทม์ไลน์: โชว์ตามลำดับ + ถ้ามียกเลิกให้ "แปะต่อท้าย" สเตตัสล่าสุด
-  console.log("🔍 data:", data);
+  const isLocked = isCancelled || isDone;
 
   const timelineItems = useMemo(() => {
-    const items = statusOrder.map((status) => {
-      const item = data.find((d) => d.jobStatus === status);
-      if (item) {
+    const total = statusOrder.length;
+
+    const items = statusOrder.map((status, idx) => {
+      const record = data.find((d) => d.jobStatus === status);
+      const levelColor = getLevelColor(idx, total);
+      const soft = getSoftColors(idx, total);
+
+      if (record) {
         return {
-          color: "blue",
-          dot: (
-            <CheckCircleTwoTone
-              twoToneColor="#1677ff"
-              style={{ fontSize: 18 }}
-            />
-          ),
-          label: formatDate(item.updateAt),
+          color: levelColor,
+          dot: getStatusDot(status, levelColor),
+          label: formatDate(record.updateAt),
           children: (
-            <div>
-              <p className="tl-title">{item.jobStatus}</p>
-              <p className="tl-sub">โดย: {item.updateBy}</p>
+            <div
+              style={{
+                background: soft.bg,
+                border: `1px solid ${soft.border}`,
+                borderRadius: 10,
+                padding: 12,
+              }}
+            >
+              <div style={{ fontWeight: 600, color: soft.text }}>
+                {record.jobStatus}
+              </div>
+              <div style={{ color: "#666" }}>
+                โดย:{" "}
+                {record.jobStatus === "เริ่มงาน"
+                  ? record.serviceRef
+                  : record.updateBy}
+              </div>
             </div>
           ),
-          style: { marginBottom: 24 },
+          style: { marginBottom: 18 },
         };
       }
-      // ยังไม่ถึงขั้นนี้ → โชว์เป็นรอ
+
+      // Pending step (no update yet)
       return {
-        color: "gray",
-        dot: <ClockCircleOutlined style={{ fontSize: 18 }} />,
+        color: "#d9d9d9",
+        dot: <ClockCircleOutlined style={{ fontSize: 22, color: "#bfbfbf" }} />,
         label: status,
-        children: <span className="tl-placeholder">รออัปเดตสถานะ</span>,
-        style: { marginBottom: 24 },
+        children: <span style={{ color: "#bfbfbf" }}>รออัปเดตสถานะ</span>,
+        style: { marginBottom: 18 },
       };
     });
 
-    // ถ้ามี “ยกเลิกการเคลมสินค้า” ให้ต่อท้ายจากสถานะล่าสุด
+    // Handle cancellation status as a separate terminal item if exists
     const cancelItem = data.find((d) => d.jobStatus === CANCEL_STATUS);
     if (cancelItem) {
       items.push({
-        color: "red",
+        color: "#ff4d4f",
         dot: (
-          <CloseCircleTwoTone twoToneColor="#ff4d4f" style={{ fontSize: 18 }} />
+          <CloseCircleTwoTone twoToneColor="#ff4d4f" style={{ fontSize: 22 }} />
         ),
         label: formatDate(cancelItem.updateAt),
         children: (
           <div>
-            <p className="tl-title" style={{ color: "#cf1322" }}>
+            <div style={{ fontWeight: 600, color: "#cf1322" }}>
               {CANCEL_STATUS}
-            </p>
-            <p className="tl-sub">
-              โดย: {cancelItem.updateBy} {/* {cancelItem.customer_lastname} */}
-            </p>
+            </div>
+            <div style={{ color: "#888" }}>โดย: {cancelItem.updateBy}</div>
           </div>
         ),
-        style: { marginBottom: 28 },
+        style: { marginBottom: 22 },
       });
-    }
-
-    // ถ้าไม่มีข้อมูลเลย ให้ขึ้น placeholder ทั้งเส้น
-    const hasAny =
-      data?.some((d) => statusOrder.includes(d.jobStatus)) || cancelItem;
-    if (!hasAny) {
-      return statusOrder.map((status) => ({
-        color: "gray",
-        dot: (
-          <ExclamationCircleTwoTone
-            twoToneColor="#d9d9d9"
-            style={{ fontSize: 18 }}
-          />
-        ),
-        label: status,
-        children: <span className="tl-placeholder">ยังไม่มีข้อมูลสถานะ</span>,
-        style: { marginBottom: 28 },
-      }));
     }
 
     return items;
   }, [data]);
 
-  // คำนวณวันคงเหลือ (ใช้ของเดิม) + เพิ่มข้อความพิเศษตามเงื่อนไข
-  const countRemainingTime = (data) => {
-    if (!data || data.length === 0) return [];
+  const countRemainingTime = (dataArr) => {
+    if (!dataArr || dataArr.length === 0) return [];
     const currentDate = new Date();
-    return data.map((item) => {
+    return dataArr.map((item) => {
       const completionDate = new Date(item.expected_completion_date);
       const remainingTimeInDays = Math.floor(
         (completionDate.getTime() - currentDate.getTime()) /
@@ -248,19 +345,8 @@ export default function ShowDetail() {
 
   const warningJob = countRemainingTime(data);
   const topBanner = useMemo(() => {
-    if (isCancelled) {
-      return {
-        text: "ยกเลิกการเคลมสินค้า",
-        style: { color: "#cf1322", fontWeight: 600 },
-      };
-    }
-    if (isDone) {
-      return {
-        text: "การเคลมสินค้าสำเร็จ",
-        style: { color: "#389e0d", fontWeight: 600 },
-      };
-    }
-    // ใช้ข้อความเดิม (วันคงเหลือ) หากยังไม่จบ/ไม่ยกเลิก
+    if (isCancelled) return { text: "ยกเลิกการเคลมสินค้า", color: "error" };
+    if (isDone) return { text: "การเคลมสินค้าสำเร็จ", color: "success" };
     if (warningJob.length > 0) {
       const r = warningJob[0];
       const msg =
@@ -269,91 +355,53 @@ export default function ShowDetail() {
           : r.remainingTime === 0
           ? "ไม่เหลือเวลา"
           : `เกินระยะเวลาที่กำหนด ${Math.abs(r.remainingTime)} วัน`;
-      return { text: msg, style: {} };
+      return { text: msg, color: "processing" };
     }
     return null;
   }, [isCancelled, isDone, warningJob]);
 
-  // ----- เลือกสถานะได้เฉพาะ "ขั้นถัดไป" + "ยกเลิก" เท่านั้น -----
+  // ----- next status options (no skipping) -----
   const nextOptions = useMemo(() => {
-    // ถ้าล็อก (ยกเลิก/จบงาน) → ไม่มีตัวเลือก
     if (isLocked) return [];
-
-    // ถ้าไม่มีสถานะเลย → ขั้นแรกต้องเป็น "เริ่มงาน" หรือ "ยกเลิก"
-    if (!latestStatus) {
-      return ["เริ่มงาน", CANCEL_STATUS];
-    }
-
-    // ถ้ามีล่าสุดแล้ว และยังไม่ยกเลิก/ไม่จบ → อนุญาต "ขั้นถัดไป" + "ยกเลิก"
+    if (!latestStatus) return ["เริ่มงาน", CANCEL_STATUS];
     const idx = statusOrder.indexOf(latestStatus);
     const next =
       idx >= 0 && idx < statusOrder.length - 1 ? statusOrder[idx + 1] : null;
-
     const set = new Set();
     if (next) set.add(next);
     set.add(CANCEL_STATUS);
     return Array.from(set);
   }, [latestStatus, isLocked]);
 
-  const normFile = (e) => {
-    if (Array.isArray(e)) return e;
-    return e?.fileList;
-  };
+  const normFile = (e) => (Array.isArray(e) ? e : e?.fileList);
 
-  const uploadProps = {
-    name: "imageFile",
-    multiple: false,
-    action: "http://localhost:3303/upload",
-    listType: "picture",
-    onChange(info) {
-      const { status } = info.file;
-      if (status === "done") {
-        message.success(`${info.file.name} อัปโหลดสำเร็จ.`);
-        const imageUrl = info.file.response.url;
-        console.log("URL ของรูปภาพ:", imageUrl);
-      } else if (status === "error") {
-        message.error(`${info.file.name} อัปโหลดไม่สำเร็จ.`);
-      }
-    },
-  };
-
-  // แหล่งตัวเลือกสถานะ (ใช้ตอน render dropdown จริง โดยจะ filter ด้วย nextOptions)
   const allMenuItems = [
     ...statusOrder.map((s) => ({ key: s, label: s })),
     { key: CANCEL_STATUS, label: CANCEL_STATUS },
   ];
 
-  // ===== Handlers: Status =====
+  // Handlers
   const handleStatusChange = (newStatus) => {
     if (data.length > 0) {
-      const jobRef = data[0].jobRef;
-      setChangedStatus({ [jobRef]: newStatus });
+      const jobRefVal = data[0].jobRef;
+      setChangedStatus({ [jobRefVal]: newStatus });
     }
   };
 
   const handleConfirmStatus = async () => {
     try {
-      const updatePromises = Object.keys(changedStatus).map((jobRef) => {
-        const newStatus = changedStatus[jobRef];
+      const updatePromises = Object.keys(changedStatus).map((jobRefVal) => {
+        const newStatus = changedStatus[jobRefVal];
         const token =
           localStorage.getItem("token") || sessionStorage.getItem("token");
-        console.log("Token being sent:", token);
-        console.log(newStatus);
-        console.log(jobRef);
-
         if (!nextOptions.includes(newStatus)) {
           message.error("ไม่สามารถข้ามลำดับสถานะได้");
           throw new Error("Invalid status transition");
         }
-
         return axios.put(
-          `http://localhost:3302/update-status/${jobRef}`,
+          `http://localhost:3302/update-status/${jobRefVal}`,
           { jobStatus: newStatus },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       });
 
@@ -443,564 +491,615 @@ export default function ShowDetail() {
     }
   };
 
+  // Dropdown menu for Edit actions
+  const editMenu = {
+    items: [
+      {
+        key: "status",
+        label: "แก้ไขสถานะงาน",
+        onClick: () => setEditMode("status"),
+      },
+      {
+        key: "customer",
+        label: "แก้ไขข้อมูลลูกค้า",
+        onClick: () => setEditMode("customer"),
+      },
+      {
+        key: "product",
+        label: "แก้ไขข้อมูลสินค้า",
+        onClick: () => setEditMode("product"),
+      },
+    ],
+  };
+
   return (
-    <div className="d-flex flex-row">
-      <div className="contain-job">
-        {(warningJob.length > 0 || topBanner) && (
-          <div className="d-flex align-items-center job-header mb-4 mt-5">
-            <h1 className="me-5">{(data[0] && data[0].jobRef) || ""}</h1>
-            {topBanner ? (
-              <h2 className="me-3" style={topBanner.style}>
-                {topBanner.text}
-              </h2>
-            ) : (
-              <h2 className="me-3">{/* fallback is handled in topBanner */}</h2>
-            )}
-          </div>
-        )}
-
-        <Accordion defaultActiveKey={["0", "1"]} alwaysOpen>
-          {/* ข้อมูลลูกค้า */}
-          <Accordion.Item eventKey="0" className="accordion-item">
-            <Accordion.Header className="accordion-header">
-              <IoMdPeople className="me-4 accordion-icon" /> ข้อมูลลูกค้า
-            </Accordion.Header>
-            <Accordion.Body>
-              {data && data.length > 0 && (
-                <div className="product-details row">
-                  <div className="col-6">
-                    <p className="mt-4">
-                      <strong>ชื่อ</strong>
-                    </p>
-                    <p>{data[0].customer_firstname}</p>
-                    <p className="mt-4">
-                      <strong>อายุ</strong>
-                    </p>
-                    <p>{data[0].customer_old}</p>
-                    <p className="mt-4">
-                      <strong>Username</strong>
-                    </p>
-                    <p>{data[0].username}</p>
-                    <p className="mt-4">
-                      <strong>Line ID</strong>
-                    </p>
-                    <p>{data[0].line_id}</p>
-                    <p className="mt-4">
-                      <strong>ที่อยู่</strong>
-                    </p>
-                    <p>{data[0].address}</p>
-                  </div>
-                  <div className="col-6">
-                    <p className="mt-4">
-                      <strong>นามสกุล</strong>
-                    </p>
-                    <p>{data[0].customer_lastname}</p>
-                    <p className="mt-4">
-                      <strong>Email</strong>
-                    </p>
-                    <p>{data[0].email}</p>
-                    <p className="mt-4">
-                      <strong>ช่องทางติดต่อ</strong>
-                    </p>
-                    <p>{data[0].customer_contact}</p>
-                    <p className="mt-4">
-                      <strong>เบอร์โทรศัพท์</strong>
-                    </p>
-                    <p>{data[0].phone}</p>
-                  </div>
-                </div>
+    <div style={{ padding: 16 }}>
+      {/* Header */}
+      <div className="card border-0 mb-3" style={{ borderRadius: 16 }}>
+        <div className="card-body">
+          <div className="row g-3 align-items-center">
+            <div className="col-auto">
+              <span
+                className="badge text-bg-primary"
+                style={{ fontSize: 16, padding: "8px 12px" }}
+              >
+                {data[0]?.jobRef || jobRef || "-"}
+              </span>
+            </div>
+            <div className="col">
+              {topBanner && (
+                <span
+                  className="badge"
+                  style={{
+                    fontSize: 14,
+                    padding: "6px 12px",
+                    color: "#fff",
+                    background:
+                      "linear-gradient(135deg, hsl(200,80%,55%), hsl(320,80%,60%))",
+                  }}
+                >
+                  {topBanner.text}
+                </span>
               )}
-            </Accordion.Body>
-          </Accordion.Item>
-
-          {/* ข้อมูลสินค้า */}
-          <Accordion.Item eventKey="1" className="accordion-item">
-            <Accordion.Header className="accordion-header">
-              <PiPackageFill className="me-4 accordion-icon" /> ข้อมูลสินค้า
-            </Accordion.Header>
-            <Accordion.Body>
-              {data && data.length > 0 && (
-                <div className="product-details row">
-                  <div className="col-6">
-                    <p className="mt-4">
-                      <strong>Serial Number</strong>
-                    </p>
-                    <p>{data[0].serialNumber}</p>
-                    <p className="mt-4">
-                      <strong>Brand</strong>
-                    </p>
-                    <p>{data[0].brand}</p>
-                    <p className="mt-4">
-                      <strong>จำนวนสินค้าที่ซ่อม</strong>
-                    </p>
-                    <p>{data[0].unit}</p>
-                    <p className="mt-4">
-                      <strong>รายละเอียดสินค้า</strong>
-                    </p>
-                    <p>{data[0].description}</p>
-                    <p className="mt-4">
-                      <strong>วันที่เปิดซ่อม</strong>
-                    </p>
-                    <p>{data[0].createAt}</p>
-                    <p className="mt-4">
-                      <strong>รูปภาพสินค้าที่เคลม</strong>
-                    </p>
-                    <Button
-                      className="d-flex align-items-center justify-content-between btn-show-image margin-top-100"
-                      onClick={() => setopenClaim(!openClaim)}
-                      aria-controls="example-collapse-text"
-                      aria-expanded={openClaim}
+            </div>
+            <div className="col-auto d-flex gap-2">
+              <div className="dropdown">
+                <button
+                  className={`btn btn-outline-secondary d-flex align-items-center gap-2 ${
+                    isLocked ? "disabled" : ""
+                  }`}
+                  data-bs-toggle="dropdown"
+                  disabled={isLocked}
+                >
+                  <FaEdit /> แก้ไขงาน
+                </button>
+                <ul className="dropdown-menu">
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => setEditMode("status")}
                     >
-                      <IoImage className="button-icon justify-content-start" />
-                      <span className="button-text">ดูรูปภาพเพิ่มเติม</span>
-                    </Button>
-                    <div style={{ minHeight: "150px" }}>
-                      <Collapse in={openClaim} dimension="width">
-                        <div id="example-collapse-text">
-                          <Card body style={{ width: "400px" }}>
-                            {data &&
-                            data.length > 0 &&
-                            data[0].images &&
-                            data[0].images.length > 0 ? (
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap", // ทำให้รูปภาพขึ้นบรรทัดใหม่ได้
-                                  gap: "10px",
-                                  justifyContent: "center", // จัดให้อยู่ตรงกลาง
-                                  padding: "10px",
-                                }}
-                              >
-                                {/* วนลูปเพื่อแสดงรูปภาพทั้งหมดจาก array `images` */}
-                                {data[0].images.map((url, index) => (
-                                  <img
-                                    key={`img-${index}`}
-                                    src={url}
-                                    alt={`รูปภาพที่ ${index + 1}`}
-                                    style={{
-                                      width: "calc(50% - 5px)", // 2 รูปต่อแถวพร้อมช่องว่าง
-                                      maxHeight: "200px",
-                                      objectFit: "cover",
-                                      borderRadius: "5px",
-                                    }}
-                                  />
-                                ))}
-                              </div>
-                            ) : (
-                              <p>ไม่มีรูปภาพแสดง</p>
-                            )}
-                          </Card>
-                        </div>
-                      </Collapse>
-                    </div>
-                  </div>
-                  <div className="col-6">
-                    <p className="mt-4">
-                      <strong>ชื่อสินค้า</strong>
-                    </p>
-                    <p>{data[0].product_name}</p>
-                    <p className="mt-4">
-                      <strong>SKU</strong>
-                    </p>
-                    <p>{data[0].sku}</p>
-                    <p className="mt-4">
-                      <strong>ประเภทสินค้า</strong>
-                    </p>
-                    <p>{data[0].category}</p>
-                    <p className="mt-4">
-                      <strong>หน่วย</strong>
-                    </p>
-                    <p>{data[0].pcs}</p>
-                    <p className="mt-4">
-                      <strong>รูปภาพสินค้า</strong>
-                    </p>
-                    <Button
-                      className="d-flex align-items-center justify-content-between btn-show-image margin-top-100"
-                      onClick={() => setOpen(!open)}
-                      aria-controls="example-collapse-text"
-                      aria-expanded={open}
+                      แก้ไขสถานะงาน
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => setEditMode("customer")}
                     >
-                      <IoImage className="button-icon justify-content-start" />
-                      <span className="button-text">ดูรูปภาพเพิ่มเติม</span>
-                    </Button>
-                    <div style={{ minHeight: "150px" }}>
-                      <Collapse in={open} dimension="width">
-                        <div id="example-collapse-text">
-                          <Card body style={{ width: "400px" }}>
-                            {data &&
-                            data.length > 0 &&
-                            data[0].image &&
-                            data[0].image.length > 0 ? (
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap", // ทำให้รูปภาพขึ้นบรรทัดใหม่ได้
-                                  gap: "10px",
-                                  justifyContent: "center", // จัดให้อยู่ตรงกลาง
-                                  padding: "10px",
-                                }}
-                              >
-                                <img
-                                  src={data[0].image}
-                                  alt="Image from server"
-                                  className="image-show-detail"
-                                />
-                              </div>
-                            ) : (
-                              <p>ไม่มีรูปภาพแสดง</p>
-                            )}
-                          </Card>
-                        </div>
-                      </Collapse>
-                    </div>
-                    {/* <img
-                      src={data[0].image}
-                      alt="Image from server"
-                      className="image-show-detail"
-                    /> */}
-                  </div>
-                </div>
-              )}
-            </Accordion.Body>
-          </Accordion.Item>
-        </Accordion>
-        {/* ... ข้อมูลลูกค้า / ข้อมูลสินค้า / Remark + Upload ... */}
-
-        <div className="d-flex flex-column mt-2">
-          <div>
-            <Form.Item
-              name="Remark"
-              label="หมายเหตุ ( หากมี )"
-              rules={[{ required: true }, { type: "string" }]}
-              className="d-flex mt-5"
-            >
-              <div className="ms-2">
-                <Input.TextArea
-                  prefix={<MdOutlineDescription />}
-                  className="form-item-custom-size-note"
-                />
+                      แก้ไขข้อมูลลูกค้า
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      onClick={() => setEditMode("product")}
+                    >
+                      แก้ไขข้อมูลสินค้า
+                    </button>
+                  </li>
+                </ul>
               </div>
-            </Form.Item>
+              <button
+                className="btn btn-danger d-flex align-items-center gap-2"
+                onClick={() => deleteData(jobRef)}
+              >
+                <FaTrashAlt /> ลบข้อมูล
+              </button>
+            </div>
           </div>
-          {/* <div>
-            <Form>
+        </div>
+      </div>
+      <Row gutter={[16, 16]}>
+        {/* Left Column: Details & Forms */}
+        <Col xs={24} lg={14}>
+          {/* Customer & Product */}
+          <Card
+            bordered={false}
+            bodyStyle={{ background: "#fff", borderRadius: 16, padding: 16 }}
+          >
+            <div className="claim-view">
+              <Accordion
+                defaultActiveKey={["0", "1"]}
+                alwaysOpen
+                className="acc-custom"
+              >
+                {/* ลูกค้า */}
+                <Accordion.Item eventKey="0" className="acc-item acc-customer">
+                  <Accordion.Header>
+                    <IoMdPeople className="me-2 acc-icon" />
+                    ข้อมูลลูกค้า
+                  </Accordion.Header>
+                  <Accordion.Body>
+                    {data?.length > 0 && (
+                      <div className="section-card">
+                        <div className="details-grid">
+                          <div className="kv">
+                            <span className="label">ชื่อ</span>
+                            <span className="value">
+                              {data[0].customer_firstname ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">นามสกุล</span>
+                            <span className="value">
+                              {data[0].customer_lastname ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">อายุ</span>
+                            <span className="value">
+                              {data[0].customer_old ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">Username</span>
+                            <span className="value">
+                              {data[0].username ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">Line ID</span>
+                            <span className="value">
+                              {data[0].line_id ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">Email</span>
+                            <span className="value">
+                              {data[0].email ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">ช่องทางติดต่อ</span>
+                            <span className="value">
+                              {data[0].customer_contact ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">เบอร์โทรศัพท์</span>
+                            <span className="value">
+                              {data[0].phone ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv kv-span-2">
+                            <span className="label">ที่อยู่</span>
+                            <span className="value">
+                              {data[0].address ?? "-"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Accordion.Body>
+                </Accordion.Item>
+
+                {/* สินค้า */}
+                <Accordion.Item eventKey="1" className="acc-item acc-product">
+                  <Accordion.Header>
+                    <PiPackageFill className="me-2 acc-icon" />
+                    ข้อมูลสินค้า
+                  </Accordion.Header>
+                  <Accordion.Body>
+                    {data?.length > 0 && (
+                      <div className="section-card">
+                        <div className="details-grid">
+                          <div className="kv">
+                            <span className="label">ชื่อสินค้า</span>
+                            <span className="value">
+                              {data[0].product_name ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">SKU</span>
+                            <span className="value">{data[0].sku ?? "-"}</span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">ประเภทสินค้า</span>
+                            <span className="value chip">
+                              {data[0].category ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">หน่วย</span>
+                            <span className="value">{data[0].pcs ?? "-"}</span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">Serial Number</span>
+                            <span className="value">
+                              {data[0].serialNumber ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">Brand</span>
+                            <span className="value chip chip-indigo">
+                              {data[0].brand ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">จำนวนสินค้าที่ซ่อม</span>
+                            <span className="value">{data[0].unit ?? "-"}</span>
+                          </div>
+                          <div className="kv">
+                            <span className="label">วันที่เปิดซ่อม</span>
+                            <span className="value">
+                              {data[0].createAt ?? "-"}
+                            </span>
+                          </div>
+                          <div className="kv kv-span-2">
+                            <span className="label">รายละเอียดสินค้า</span>
+                            <span className="value">
+                              {data[0].description ?? "-"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* รูปภาพ */}
+                        <div className="media-grid">
+                          <div className="media-card">
+                            <div className="media-title">รูปภาพสินค้า</div>
+                            <Button
+                              className="btn-show-image"
+                              onClick={() => setOpen(!open)}
+                              aria-controls="gallery-product"
+                              aria-expanded={open}
+                            >
+                              <IoImage className="button-icon" />
+                              <span>ดูรูปภาพเพิ่มเติม</span>
+                            </Button>
+                            <div className="media-collapse">
+                              <Collapse in={open} dimension="height">
+                                <div id="gallery-product">
+                                  <div className="gallery-grid">
+                                    {data[0].image ? (
+                                      <img
+                                        src={data[0].image}
+                                        alt="Product"
+                                        className="gallery-img"
+                                      />
+                                    ) : (
+                                      <p className="empty-text">
+                                        ไม่มีรูปภาพแสดง
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </Collapse>
+                            </div>
+                          </div>
+
+                          <div className="media-card">
+                            <div className="media-title">
+                              รูปภาพสินค้าที่เคลม
+                            </div>
+                            <Button
+                              className="btn-show-image"
+                              onClick={() => setopenClaim(!openClaim)}
+                              aria-controls="gallery-claim"
+                              aria-expanded={openClaim}
+                            >
+                              <IoImage className="button-icon" />
+                              <span>ดูรูปภาพเพิ่มเติม</span>
+                            </Button>
+                            <div className="media-collapse">
+                              <Collapse in={openClaim} dimension="height">
+                                <div id="gallery-claim">
+                                  <div className="gallery-grid">
+                                    {data[0].images?.length ? (
+                                      data[0].images.map((u, i) => (
+                                        <img
+                                          key={`img-${i}`}
+                                          src={u}
+                                          alt={`รูปภาพที่ ${i + 1}`}
+                                          className="gallery-img"
+                                        />
+                                      ))
+                                    ) : (
+                                      <p className="empty-text">
+                                        ไม่มีรูปภาพแสดง
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </Collapse>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Accordion.Body>
+                </Accordion.Item>
+              </Accordion>
+            </div>
+          </Card>
+
+          {/* Remark + Upload */}
+          <Card bordered={false} style={{ borderRadius: 16, marginBottom: 16 }}>
+            <Form form={form} layout="vertical" onFinish={onFinish}>
+              <Form.Item
+                name="Remark"
+                label="หมายเหตุ (หากมี)"
+                rules={[{ required: true, message: "กรุณากรอกหมายเหตุ" }]}
+              >
+                <Input.TextArea rows={4} placeholder="พิมพ์หมายเหตุที่นี่..." />
+              </Form.Item>
+
               <Form.Item
                 name="image"
                 label="รูปภาพสินค้า"
                 valuePropName="fileList"
                 getValueFromEvent={normFile}
                 rules={[{ required: true, message: "กรุณาอัปโหลดรูปภาพ" }]}
-                className="form-item-custom-size-detail"
               >
-                <div className="ms-5">
-                  <Dragger {...uploadProps}>
-                    <p className="ant-upload-text">
-                      คลิกหรือลากไฟล์มาวางที่นี่
-                    </p>
-                    <p className="ant-upload-hint">
-                      รองรับการอัปโหลดไฟล์เดียวหรือหลายไฟล์
-                    </p>
-                  </Dragger>
-                </div>
+                <Dragger {...uploadProps}>
+                  <p className="ant-upload-drag-icon">
+                    <PictureOutlined />
+                  </p>
+                  <p className="ant-upload-text">คลิกหรือลากไฟล์มาวางที่นี่</p>
+                  <p className="ant-upload-hint">
+                    รองรับการอัปโหลดไฟล์เดียวหรือหลายไฟล์
+                  </p>
+                </Dragger>
               </Form.Item>
+
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={() => form.submit()}
+                >
+                  บันทึก
+                </Button>
+                <Button onClick={() => form.resetFields()}>ล้างข้อมูล</Button>
+              </Space>
             </Form>
-          </div> */}
-        </div>
-        <div>
-          <Button
-            className="btn btn-primary btn-save d-flex align-items-center justify-content-between"
-            onClick={() => {
-              form.submit(); // ⬅️ ให้ onFinish จัดการเปิด modal เอง
+          </Card>
+        </Col>
+
+        {/* Right Column: Timeline + Actions */}
+        <Col xs={24} lg={10}>
+          <Card
+            bordered={false}
+            style={{
+              borderRadius: 16,
+              marginBottom: 16,
+              // background:
+              //   "linear-gradient(180deg, hsla(200,70%,97%,0.7), hsla(320,70%,97%,0.7))",
             }}
           >
-            <FaRegSave className="button-icon justify-content-start" />
-            <span className="button-text">บันทึก</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Right column: Timeline + Actions */}
-      <div className="contain-status d-flex flex-column align-items-center">
-        <h1 className="text-center mb-3 mt-5">สถานะ</h1>
-        <div className="timeline-wrapper">
-          <Timeline mode="left" items={timelineItems} />
-        </div>
-
-        {/* ====== Action Area ====== */}
-        <div className="d-flex justify-content-center gap-3 mt-3 mb-2">
-          {/* ปิดแก้ไขทั้งหมดเมื่อถูกล็อก */}
-          <div
-            className={`dropdown ${isLocked ? "disabled" : ""}`}
-            onMouseEnter={() => !isLocked && setIsEditDropdownOpen(true)}
-            onMouseLeave={() => {
-              setIsEditDropdownOpen(false);
-              setIsDetailDropdownOpen(false);
-              setIsStatusDropdownOpen(false);
-            }}
-          >
-            <button
-              className="btn btn-secondary dropdown-toggle btn-showData-Edit"
-              type="button"
-              aria-expanded={isEditDropdownOpen}
-              disabled={isLocked}
-              title={isLocked ? "สถานะถูกล็อก" : ""}
-            >
-              แก้ไขงาน
-            </button>
-
-            {isEditDropdownOpen && (
-              <ul className="dropdown-menu show">
-                {/* Edit Status */}
-                <li
-                  className="dropdown-hover-right"
-                  onMouseEnter={() => setIsStatusDropdownOpen(true)}
-                  onMouseLeave={() => setIsStatusDropdownOpen(false)}
-                >
-                  <a
-                    className="dropdown-item"
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setEditMode("status");
-                    }}
+            <div style={{ fontSize: 18, fontWeight: 600 }}>สถานะ</div>
+            <Timeline
+              mode="left"
+              items={timelineItems}
+              style={{
+                marginTop: 8,
+                padding: "8px 10px",
+                borderRadius: 12,
+              }}
+            />
+            {/* Status Editor */}
+            {editMode === "status" && !isLocked && (
+              <Space
+                direction="vertical"
+                style={{ width: "100%", marginTop: 8 }}
+              >
+                <Select
+                  placeholder="เลือกสถานะใหม่"
+                  style={{ width: "100%" }}
+                  onChange={handleStatusChange}
+                  options={allMenuItems
+                    .filter((m) => nextOptions.includes(m.key))
+                    .map((m) => ({ label: m.label, value: m.key }))}
+                />
+                <Space>
+                  <Button
+                    type="primary"
+                    onClick={handleConfirmStatus}
+                    disabled={Object.keys(changedStatus).length === 0}
                   >
-                    แก้ไขสถานะงาน
-                  </a>
-                </li>
-
-                {/* Edit Details (ยังเปิดได้ ถ้าต้องการให้ล็อกทั้งหมด ให้ย้ายไปอยู่ใต้ isLocked เงื่อนไข) */}
-                <li
-                  className="dropdown-hover-right"
-                  onMouseEnter={() => setIsDetailDropdownOpen(true)}
-                  onMouseLeave={() => setIsDetailDropdownOpen(false)}
-                >
-                  <a className="dropdown-item">แก้ไขรายละเอียดงาน</a>
-                  {isDetailDropdownOpen && (
-                    <ul
-                      className="dropdown-menu show"
-                      style={{ left: "100%", top: 0 }}
-                    >
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setEditMode("customer");
-                          }}
-                        >
-                          แก้ไขข้อมูลลูกค้า
-                        </a>
-                      </li>
-                      <li>
-                        <a
-                          className="dropdown-item"
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setEditMode("product");
-                          }}
-                        >
-                          แก้ไขข้อมูลสินค้า
-                        </a>
-                      </li>
-                    </ul>
-                  )}
-                </li>
-              </ul>
+                    ยืนยัน
+                  </Button>
+                  <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
+                </Space>
+              </Space>
             )}
-          </div>
+            {editMode === "customer" && (
+              <Card
+                size="small"
+                bordered
+                style={{ borderRadius: 12, marginTop: 12 }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                  แก้ไขข้อมูลลูกค้า
+                </div>
+                <Form
+                  form={customerForm}
+                  layout="vertical"
+                  onFinish={handleSaveCustomer}
+                >
+                  <Row gutter={12}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="customer_firstname"
+                        label="ชื่อ"
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="customer_lastname"
+                        label="นามสกุล"
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item name="customer_old" label="อายุ">
+                        <InputNumber
+                          min={1}
+                          max={100}
+                          style={{ width: "100%" }}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        name="phone"
+                        label="เบอร์โทรศัพท์"
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item name="email" label="Email">
+                        <Input type="email" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="username" label="Username">
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="line_id" label="Line ID">
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="customer_contact"
+                        label="ช่องทางติดต่อ"
+                        rules={[{ required: true }, { type: "string" }]}
+                      >
+                        <Select placeholder="กรุณาเลือกช่องทางติดต่อ">
+                          <Option value="phone">เบอร์โทรศัพท์</Option>
+                          <Option value="line">Line</Option>
+                          <Option value="address">ที่อยู่ลูกค้า</Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                      <Form.Item name="address" label="ที่อยู่">
+                        <Input.TextArea rows={3} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Space>
+                    <Button type="primary" htmlType="submit">
+                      บันทึก
+                    </Button>
+                    <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
+                  </Space>
+                </Form>
+              </Card>
+            )}
+            {editMode === "product" && (
+              <Card
+                size="small"
+                bordered
+                style={{ borderRadius: 12, marginTop: 12 }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                  แก้ไขข้อมูลสินค้า
+                </div>
+                <Form
+                  form={productForm}
+                  layout="vertical"
+                  onFinish={handleSaveProduct}
+                >
+                  <Row gutter={12}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="product_name"
+                        label="ชื่อสินค้า"
+                        rules={[{ required: true }]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="sku" label="SKU">
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item name="brand" label="Brand">
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item name="category" label="ประเภทสินค้า">
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item name="pcs" label="หน่วย">
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="serialNumber" label="Serial Number">
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="unit" label="จำนวนสินค้าที่ซ่อม">
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                      <Form.Item name="description" label="รายละเอียดสินค้า">
+                        <Input.TextArea rows={3} />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                  <Space>
+                    <Button type="primary" htmlType="submit">
+                      บันทึก
+                    </Button>
+                    <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
+                  </Space>
+                </Form>
+              </Card>
+            )}
+            <div className="d-flex justify-content-center">
+              <button
+                className="btn d-inline-flex align-items-center gap-2 text-white"
+                style={{
+                  border: "none",
+                  background:
+                    "linear-gradient(135deg, hsl(200,80%,55%), hsl(320,80%,60%))",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                  padding: "10px 16px",
+                  borderRadius: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <FaDownload /> Export Data
+              </button>
 
-          <Button
-            danger
-            className="btn-showData-delete"
-            onClick={() => deleteData(jobRef)}
-          >
-            ลบข้อมูล
-          </Button>
-        </div>
-
-        {/* ====== Status Editor ====== */}
-        {editMode === "status" && !isLocked && (
-          <div className="d-flex justify-content-center gap-2 mt-3">
-            <div className="w-100">
-              <Select
-                placeholder="เลือกสถานะใหม่"
-                style={{ width: "100%" }}
-                onChange={handleStatusChange}
-                // ให้เลือกได้เฉพาะขั้นถัดไป + ยกเลิก
-                options={allMenuItems
-                  .filter((m) => nextOptions.includes(m.key))
-                  .map((m) => ({ label: m.label, value: m.key }))}
-              />
+              {/* <button
+                className="btn d-inline-flex align-items-center gap-2 text-white"
+                style={{
+                  border: "none",
+                  background:
+                    "linear-gradient(135deg, hsl(10, 80%, 60%), hsl(350, 80%, 50%))",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                  padding: "10px 16px",
+                  borderRadius: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <FaTrashAlt /> ลบข้อมูล
+              </button> */}
             </div>
-            <Button
-              type="primary"
-              onClick={handleConfirmStatus}
-              disabled={Object.keys(changedStatus).length === 0}
-            >
-              ยืนยัน
-            </Button>
-            <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
-          </div>
-        )}
-
-        {editMode === "customer" && (
-          <div className="mt-4 p-3 border rounded-3">
-            <h5 className="mb-3">แก้ไขข้อมูลลูกค้า</h5>
-            <Form
-              form={customerForm}
-              layout="vertical"
-              onFinish={handleSaveCustomer}
-            >
-              <div className="row">
-                <div className="col-md-6">
-                  <Form.Item
-                    name="customer_firstname"
-                    label="ชื่อ"
-                    rules={[{ required: true }]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-6">
-                  <Form.Item
-                    name="customer_lastname"
-                    label="นามสกุล"
-                    rules={[{ required: true }]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-4">
-                  <Form.Item name="customer_old" label="อายุ">
-                    <InputNumber min={1} max={100} />
-                  </Form.Item>
-                </div>
-                <div className="col-md-4">
-                  <Form.Item
-                    name="phone"
-                    label="เบอร์โทรศัพท์"
-                    rules={[{ required: true }]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-4">
-                  <Form.Item name="email" label="Email">
-                    <Input type="email" />
-                  </Form.Item>
-                </div>
-                <div className="col-md-6">
-                  <Form.Item name="username" label="Username">
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-6">
-                  <Form.Item name="line_id" label="Line ID">
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-6">
-                  <Form.Item
-                    name="customer_contact"
-                    label="ช่องทางติดต่อ"
-                    rules={[{ required: true }, { type: "string" }]}
-                    className="form-item-custom-size mb-4"
-                  >
-                    <Select placeholder="กรุณาเลือกช่องทางติดต่อ">
-                      <Select.Option value="phone">เบอร์โทรศัพท์</Select.Option>
-                      <Select.Option value="line">Line</Select.Option>
-                      <Select.Option value="address">
-                        ที่อยู่ลูกค้า
-                      </Select.Option>
-                    </Select>
-                  </Form.Item>
-                </div>
-                <div className="col-md-12">
-                  <Form.Item name="address" label="ที่อยู่">
-                    <Input.TextArea rows={3} />
-                  </Form.Item>
-                </div>
-              </div>
-              <div className="d-flex gap-2">
-                <Button type="primary" htmlType="submit">
-                  บันทึก
-                </Button>
-                <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
-              </div>
-            </Form>
-          </div>
-        )}
-
-        {editMode === "product" && (
-          <div className="mt-4 p-3 border rounded-3">
-            <h5 className="mb-3">แก้ไขข้อมูลสินค้า</h5>
-            <Form
-              form={productForm}
-              layout="vertical"
-              onFinish={handleSaveProduct}
-            >
-              <div className="row">
-                <div className="col-md-6">
-                  <Form.Item
-                    name="product_name"
-                    label="ชื่อสินค้า"
-                    rules={[{ required: true }]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-6">
-                  <Form.Item name="sku" label="SKU">
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-4">
-                  <Form.Item name="brand" label="Brand">
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-4">
-                  <Form.Item name="category" label="ประเภทสินค้า">
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-4">
-                  <Form.Item name="pcs" label="หน่วย">
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-6">
-                  <Form.Item name="serialNumber" label="Serial Number">
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-6">
-                  <Form.Item name="unit" label="จำนวนสินค้าที่ซ่อม">
-                    <Input />
-                  </Form.Item>
-                </div>
-                <div className="col-md-12">
-                  <Form.Item name="description" label="รายละเอียดสินค้า">
-                    <Input.TextArea rows={3} />
-                  </Form.Item>
-                </div>
-              </div>
-              <div className="d-flex gap-2">
-                <Button type="primary" htmlType="submit">
-                  บันทึก
-                </Button>
-                <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
-              </div>
-            </Form>
-          </div>
-        )}
-
-        <div className="d-grid justify-content-center mt-4">
-          <button className="btn-exportData">Export Data</button>
-        </div>
-      </div>
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 }
@@ -1016,74 +1115,71 @@ export default function ShowDetail() {
 //   Upload,
 //   message,
 //   Timeline,
+//   Card,
+//   Row,
+//   Col,
+//   Tag,
+//   Descriptions,
+//   Collapse,
+//   Image,
+//   Space,
+//   Dropdown,
 // } from "antd";
-// import axios from "axios";
-// import Accordion from "react-bootstrap/Accordion";
-// import { MdOutlineDescription } from "react-icons/md";
-// import { IoMdPeople } from "react-icons/io";
-// import { PiPackageFill } from "react-icons/pi";
 // import {
 //   CheckCircleTwoTone,
 //   ClockCircleOutlined,
 //   ExclamationCircleTwoTone,
 //   CloseCircleTwoTone,
+//   SaveOutlined,
+//   EditOutlined,
+//   DeleteOutlined,
+//   PictureOutlined,
+//   DownOutlined,
+//   PlayCircleTwoTone,
+//   ShoppingCartOutlined,
+//   ToolOutlined,
+//   ExperimentOutlined,
+//   InboxOutlined,
+//   CarOutlined,
 // } from "@ant-design/icons";
-// import { IoImage } from "react-icons/io5";
-// import Card from "react-bootstrap/Card";
-// import Collapse from "react-bootstrap/Collapse";
-// import Carousel from "react-bootstrap/Carousel";
-// import "../";
+// import { ConfigProvider } from "antd";
+// import axios from "axios";
 
 // const { Dragger } = Upload;
 // const { Option } = Select;
+// const { Panel } = Collapse;
 
+// /**
+//  * Minimal, clean redesign of ShowDetail
+//  * - All data/logic preserved
+//  * - Visual structure simplified
+//  * - Replaced mixed UI libs with Ant Design only
+//  * - Kept every functional component/section from original
+//  */
 // export default function ShowDetail() {
 //   const [data, setData] = useState([]);
-//   const [open, setOpen] = useState(false);
+//   const [open, setOpen] = useState(false); // product images
+//   const [openClaim, setopenClaim] = useState(false); // claim images
 //   const { jobRef } = useParams();
-
+//   const [uploadedUrls, setUploadedUrls] = useState([]);
 //   // none | status | customer | product
 //   const [editMode, setEditMode] = useState("none");
-
-//   const [isEditDropdownOpen, setIsEditDropdownOpen] = useState(false);
-//   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-//   const [isDetailDropdownOpen, setIsDetailDropdownOpen] = useState(false);
 
 //   const [changedStatus, setChangedStatus] = useState({});
 
 //   const [customerForm] = Form.useForm();
 //   const [productForm] = Form.useForm();
-
-//   // const getData = () => {
-//   //   const url = `http://localhost:3302/get-detail/${jobRef}`;
-//   //   axios
-//   //     .get(url)
-//   //     .then((response) => {
-//   //       const responseData = Array.isArray(response.data)
-//   //         ? response.data
-//   //         : [response.data];
-//   //       setData(responseData);
-//   //       const token = localStorage.getItem("token");
-//   //       console.log(token);
-//   //       console.log(responseData);
-//   //       console.log(response.data.images);
-//   //     })
-//   //     .catch((error) => {
-//   //       console.error("Error fetching data:", error);
-//   //       setData([]);
-//   //     });
-//   // };
+//   const [form] = Form.useForm();
 
 //   const getData = () => {
 //     const url = `http://localhost:3302/get-detail/${jobRef}`;
 //     axios
 //       .get(url)
 //       .then((response) => {
-//         setData(response.data);
-//         const token = localStorage.getItem("token");
-//         console.log(token);
-//         // console.log(response.data);
-//         // console.log(response.data.images);
+//         const responseData = Array.isArray(response.data)
+//           ? response.data
+//           : [response.data];
+//         setData(responseData);
 //       })
 //       .catch((error) => {
 //         console.error("Error fetching data:", error);
@@ -1095,14 +1191,58 @@ export default function ShowDetail() {
 //     const url = `http://localhost:3302/delete-job/${jobRef}`;
 //     axios
 //       .delete(url)
-//       .then((res) => {
+//       .then(() => {
 //         message.success("ข้อมูลถูกลบเรียบร้อยแล้ว");
-//         console.log(res.jobRef);
 //       })
 //       .catch((error) => {
 //         message.error("เกิดข้อผิดพลาดในการลบข้อมูล");
 //         console.error("Error deleting job:", error);
 //       });
+//   };
+
+//   const uploadProps = {
+//     name: "imageFile",
+//     multiple: false,
+//     action: "http://localhost:3303/upload",
+//     listType: "picture",
+//     onChange(info) {
+//       const { status } = info.file;
+//       if (status === "done") {
+//         message.success(`${info.file.name} อัปโหลดสำเร็จ.`);
+//         const imageUrl = info.file.response.url;
+//         setUploadedUrls((prev) => [...prev, imageUrl]);
+//       } else if (status === "error") {
+//         message.error(`${info.file.name} อัปโหลดไม่สำเร็จ.`);
+//       }
+//     },
+//   };
+
+//   // ✅ ส่ง remark + รูปภาพ + สถานะล่าสุด
+//   const updateRemark = async (jobRef, jobData) => {
+//     const url = `http://localhost:3302/update-remark/${jobRef}`;
+//     try {
+//       await axios.put(url, jobData);
+//       message.success("เพิ่มหมายเหตุและรูปภาพเพิ่มเติมสำเร็จ!");
+//       form.resetFields();
+//       getData();
+//     } catch (error) {
+//       message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
+//       console.error("Error updating job:", error);
+//     }
+//   };
+
+//   const onFinish = (values) => {
+//     const jobRefVal = data[0]?.jobRef;
+//     if (!jobRefVal) {
+//       message.warning("ไม่พบ jobRef ที่จะอัปเดต");
+//       return;
+//     }
+//     const jobData = {
+//       remark: values.Remark,
+//       images: uploadedUrls || [],
+//       jobStatus: latestStatus || "",
+//     };
+//     updateRemark(jobRefVal, jobData);
 //   };
 
 //   useEffect(() => {
@@ -1136,7 +1276,7 @@ export default function ShowDetail() {
 //     }
 //   }, [data, customerForm, productForm]);
 
-//   // ลำดับสถานะมาตรฐาน (ห้ามข้าม)
+//   // ===== Status helpers =====
 //   const statusOrder = [
 //     "เริ่มงาน",
 //     "สั่งอะไหล่",
@@ -1147,7 +1287,47 @@ export default function ShowDetail() {
 //     "จัดส่งสำเร็จ",
 //   ];
 //   const CANCEL_STATUS = "ยกเลิกการเคลมสินค้า";
-//   const DONE_ALIASES = new Set(["จัดส่งสำเร็จ", "จบงาน"]); // รองรับทั้ง "จบงาน" และ "จัดส่งสำเร็จ"
+//   const DONE_ALIASES = new Set(["จัดส่งสำเร็จ", "จบงาน"]);
+
+//   // ===== Visual helpers for Timeline =====
+//   const getLevelColor = (idx, total) => {
+//     // Smooth hue ramp from teal (200) to pink (340)
+//     const startHue = 200;
+//     const endHue = 340;
+//     const t = total > 1 ? idx / (total - 1) : 0;
+//     const hue = Math.round(startHue + (endHue - startHue) * t);
+//     return `hsl(${hue}, 70%, 50%)`;
+//   };
+
+//   const getStatusDot = (status, color) => {
+//     const iconStyle = { fontSize: 18, color };
+//     switch (status) {
+//       case "เริ่มงาน":
+//         return (
+//           <PlayCircleTwoTone twoToneColor={color} style={{ fontSize: 18 }} />
+//         );
+//       case "สั่งอะไหล่":
+//         return <ShoppingCartOutlined style={iconStyle} />;
+//       case "เริ่มการซ่อม":
+//         return <ToolOutlined style={iconStyle} />;
+//       case "ซ่อมสำเร็จ":
+//         return (
+//           <CheckCircleTwoTone twoToneColor={color} style={{ fontSize: 18 }} />
+//         );
+//       case "รอทดสอบ":
+//         return <ExperimentOutlined style={iconStyle} />;
+//       case "รอจัดส่ง":
+//         return <InboxOutlined style={iconStyle} />;
+//       case "จัดส่งสำเร็จ":
+//         return (
+//           <CheckCircleTwoTone twoToneColor={color} style={{ fontSize: 18 }} />
+//         );
+//       default:
+//         return (
+//           <CheckCircleTwoTone twoToneColor={color} style={{ fontSize: 18 }} />
+//         );
+//     }
+//   };
 
 //   const formatDate = (dateString) => {
 //     if (!dateString) return "";
@@ -1161,7 +1341,6 @@ export default function ShowDetail() {
 //     return `วันที่: ${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 //   };
 
-//   // หา "สถานะล่าสุด" จาก updateAt (กรณี API ให้มาหลายแถว)
 //   const latestItem = useMemo(() => {
 //     if (!data || data.length === 0) return null;
 //     return [...data].sort(
@@ -1172,92 +1351,73 @@ export default function ShowDetail() {
 //   const latestStatus = latestItem?.jobStatus;
 //   const isCancelled = latestStatus === CANCEL_STATUS;
 //   const isDone = !!latestStatus && DONE_ALIASES.has(latestStatus);
-//   const isLocked = isCancelled || isDone; // ล็อกการแก้ไขเมื่อยกเลิกหรือจบงาน
-
-//   // ไทม์ไลน์: โชว์ตามลำดับ + ถ้ามียกเลิกให้ "แปะต่อท้าย" สเตตัสล่าสุด
-//   console.log("🔍 data:", data);
+//   const isLocked = isCancelled || isDone;
 
 //   const timelineItems = useMemo(() => {
-//     const items = statusOrder.map((status) => {
-//       const item = data.find((d) => d.jobStatus === status);
-//       if (item) {
+//     const total = statusOrder.length;
+
+//     const items = statusOrder.map((status, idx) => {
+//       const record = data.find((d) => d.jobStatus === status);
+//       const levelColor = getLevelColor(idx, total);
+
+//       if (record) {
 //         return {
-//           color: "blue",
-//           dot: (
-//             <CheckCircleTwoTone
-//               twoToneColor="#1677ff"
-//               style={{ fontSize: 18 }}
-//             />
-//           ),
-//           label: formatDate(item.updateAt),
+//           color: levelColor,
+//           dot: getStatusDot(status, levelColor),
+//           label: formatDate(record.updateAt),
 //           children: (
 //             <div>
-//               <p className="tl-title">{item.jobStatus}</p>
-//               <p className="tl-sub">โดย: {item.updateBy}</p>
+//               <div style={{ fontWeight: 600 }}>{record.jobStatus}</div>
+//               <div style={{ color: "#888" }}>
+//                 โดย:{" "}
+//                 {record.jobStatus === "เริ่มงาน"
+//                   ? record.serviceRef
+//                   : record.updateBy}
+//               </div>
 //             </div>
 //           ),
-//           style: { marginBottom: 24 },
+//           style: { marginBottom: 18 },
 //         };
 //       }
-//       // ยังไม่ถึงขั้นนี้ → โชว์เป็นรอ
+
+//       // Pending step (no update yet)
 //       return {
-//         color: "gray",
-//         dot: <ClockCircleOutlined style={{ fontSize: 18 }} />,
+//         color: "#d9d9d9",
+//         dot: <ClockCircleOutlined style={{ fontSize: 18, color: "#bfbfbf" }} />,
 //         label: status,
-//         children: <span className="tl-placeholder">รออัปเดตสถานะ</span>,
-//         style: { marginBottom: 24 },
+//         children: <span style={{ color: "#bfbfbf" }}>รออัปเดตสถานะ</span>,
+//         style: { marginBottom: 18 },
 //       };
 //     });
 
-//     // ถ้ามี “ยกเลิกการเคลมสินค้า” ให้ต่อท้ายจากสถานะล่าสุด
+//     // Handle cancellation status as a separate terminal item if exists
 //     const cancelItem = data.find((d) => d.jobStatus === CANCEL_STATUS);
 //     if (cancelItem) {
 //       items.push({
-//         color: "red",
+//         color: "#ff4d4f",
 //         dot: (
 //           <CloseCircleTwoTone twoToneColor="#ff4d4f" style={{ fontSize: 18 }} />
 //         ),
 //         label: formatDate(cancelItem.updateAt),
 //         children: (
 //           <div>
-//             <p className="tl-title" style={{ color: "#cf1322" }}>
+//             <div style={{ fontWeight: 600, color: "#cf1322" }}>
 //               {CANCEL_STATUS}
-//             </p>
-//             <p className="tl-sub">
-//               โดย: {cancelItem.updateBy} {/* {cancelItem.customer_lastname} */}
-//             </p>
+//             </div>
+//             <div style={{ color: "#888" }}>โดย: {cancelItem.updateBy}</div>
 //           </div>
 //         ),
-//         style: { marginBottom: 28 },
+//         style: { marginBottom: 22 },
 //       });
-//     }
-
-//     // ถ้าไม่มีข้อมูลเลย ให้ขึ้น placeholder ทั้งเส้น
-//     const hasAny =
-//       data?.some((d) => statusOrder.includes(d.jobStatus)) || cancelItem;
-//     if (!hasAny) {
-//       return statusOrder.map((status) => ({
-//         color: "gray",
-//         dot: (
-//           <ExclamationCircleTwoTone
-//             twoToneColor="#d9d9d9"
-//             style={{ fontSize: 18 }}
-//           />
-//         ),
-//         label: status,
-//         children: <span className="tl-placeholder">ยังไม่มีข้อมูลสถานะ</span>,
-//         style: { marginBottom: 28 },
-//       }));
 //     }
 
 //     return items;
 //   }, [data]);
 
-//   // คำนวณวันคงเหลือ (ใช้ของเดิม) + เพิ่มข้อความพิเศษตามเงื่อนไข
-//   const countRemainingTime = (data) => {
-//     if (!data || data.length === 0) return [];
+//   const countRemainingTime = (dataArr) => {
+//     if (!dataArr || dataArr.length === 0) return [];
 //     const currentDate = new Date();
-//     return data.map((item) => {
+//     return dataArr.map((item) => {
 //       const completionDate = new Date(item.expected_completion_date);
 //       const remainingTimeInDays = Math.floor(
 //         (completionDate.getTime() - currentDate.getTime()) /
@@ -1269,19 +1429,8 @@ export default function ShowDetail() {
 
 //   const warningJob = countRemainingTime(data);
 //   const topBanner = useMemo(() => {
-//     if (isCancelled) {
-//       return {
-//         text: "ยกเลิกการเคลมสินค้า",
-//         style: { color: "#cf1322", fontWeight: 600 },
-//       };
-//     }
-//     if (isDone) {
-//       return {
-//         text: "การเคลมสินค้าสำเร็จ",
-//         style: { color: "#389e0d", fontWeight: 600 },
-//       };
-//     }
-//     // ใช้ข้อความเดิม (วันคงเหลือ) หากยังไม่จบ/ไม่ยกเลิก
+//     if (isCancelled) return { text: "ยกเลิกการเคลมสินค้า", color: "error" };
+//     if (isDone) return { text: "การเคลมสินค้าสำเร็จ", color: "success" };
 //     if (warningJob.length > 0) {
 //       const r = warningJob[0];
 //       const msg =
@@ -1290,91 +1439,53 @@ export default function ShowDetail() {
 //           : r.remainingTime === 0
 //           ? "ไม่เหลือเวลา"
 //           : `เกินระยะเวลาที่กำหนด ${Math.abs(r.remainingTime)} วัน`;
-//       return { text: msg, style: {} };
+//       return { text: msg, color: "processing" };
 //     }
 //     return null;
 //   }, [isCancelled, isDone, warningJob]);
 
-//   // ----- เลือกสถานะได้เฉพาะ "ขั้นถัดไป" + "ยกเลิก" เท่านั้น -----
+//   // ----- next status options (no skipping) -----
 //   const nextOptions = useMemo(() => {
-//     // ถ้าล็อก (ยกเลิก/จบงาน) → ไม่มีตัวเลือก
 //     if (isLocked) return [];
-
-//     // ถ้าไม่มีสถานะเลย → ขั้นแรกต้องเป็น "เริ่มงาน" หรือ "ยกเลิก"
-//     if (!latestStatus) {
-//       return ["เริ่มงาน", CANCEL_STATUS];
-//     }
-
-//     // ถ้ามีล่าสุดแล้ว และยังไม่ยกเลิก/ไม่จบ → อนุญาต "ขั้นถัดไป" + "ยกเลิก"
+//     if (!latestStatus) return ["เริ่มงาน", CANCEL_STATUS];
 //     const idx = statusOrder.indexOf(latestStatus);
 //     const next =
 //       idx >= 0 && idx < statusOrder.length - 1 ? statusOrder[idx + 1] : null;
-
 //     const set = new Set();
 //     if (next) set.add(next);
 //     set.add(CANCEL_STATUS);
 //     return Array.from(set);
 //   }, [latestStatus, isLocked]);
 
-//   const normFile = (e) => {
-//     if (Array.isArray(e)) return e;
-//     return e?.fileList;
-//   };
+//   const normFile = (e) => (Array.isArray(e) ? e : e?.fileList);
 
-//   const uploadProps = {
-//     name: "imageFile",
-//     multiple: false,
-//     action: "http://localhost:3303/upload",
-//     listType: "picture",
-//     onChange(info) {
-//       const { status } = info.file;
-//       if (status === "done") {
-//         message.success(`${info.file.name} อัปโหลดสำเร็จ.`);
-//         const imageUrl = info.file.response.url;
-//         console.log("URL ของรูปภาพ:", imageUrl);
-//       } else if (status === "error") {
-//         message.error(`${info.file.name} อัปโหลดไม่สำเร็จ.`);
-//       }
-//     },
-//   };
-
-//   // แหล่งตัวเลือกสถานะ (ใช้ตอน render dropdown จริง โดยจะ filter ด้วย nextOptions)
 //   const allMenuItems = [
 //     ...statusOrder.map((s) => ({ key: s, label: s })),
 //     { key: CANCEL_STATUS, label: CANCEL_STATUS },
 //   ];
 
-//   // ===== Handlers: Status =====
+//   // Handlers
 //   const handleStatusChange = (newStatus) => {
 //     if (data.length > 0) {
-//       const jobRef = data[0].jobRef;
-//       setChangedStatus({ [jobRef]: newStatus });
+//       const jobRefVal = data[0].jobRef;
+//       setChangedStatus({ [jobRefVal]: newStatus });
 //     }
 //   };
 
 //   const handleConfirmStatus = async () => {
 //     try {
-//       const updatePromises = Object.keys(changedStatus).map((jobRef) => {
-//         const newStatus = changedStatus[jobRef];
+//       const updatePromises = Object.keys(changedStatus).map((jobRefVal) => {
+//         const newStatus = changedStatus[jobRefVal];
 //         const token =
 //           localStorage.getItem("token") || sessionStorage.getItem("token");
-//         console.log("Token being sent:", token);
-//         console.log(newStatus);
-//         console.log(jobRef);
-
 //         if (!nextOptions.includes(newStatus)) {
 //           message.error("ไม่สามารถข้ามลำดับสถานะได้");
 //           throw new Error("Invalid status transition");
 //         }
-
 //         return axios.put(
-//           `http://localhost:3302/update-status/${jobRef}`,
+//           `http://localhost:3302/update-status/${jobRefVal}`,
 //           { jobStatus: newStatus },
-//           {
-//             headers: {
-//               Authorization: `Bearer ${token}`,
-//             },
-//           }
+//           { headers: { Authorization: `Bearer ${token}` } }
 //         );
 //       });
 
@@ -1464,198 +1575,275 @@ export default function ShowDetail() {
 //     }
 //   };
 
+//   // Dropdown menu for Edit actions
+//   const editMenu = {
+//     items: [
+//       {
+//         key: "status",
+//         label: "แก้ไขสถานะงาน",
+//         onClick: () => setEditMode("status"),
+//       },
+//       {
+//         key: "customer",
+//         label: "แก้ไขข้อมูลลูกค้า",
+//         onClick: () => setEditMode("customer"),
+//       },
+//       {
+//         key: "product",
+//         label: "แก้ไขข้อมูลสินค้า",
+//         onClick: () => setEditMode("product"),
+//       },
+//     ],
+//   };
+
 //   return (
-//     <div className="d-flex flex-row">
-//       <div className="contain-job">
-//         {(warningJob.length > 0 || topBanner) && (
-//           <div className="d-flex align-items-center job-header mb-4 mt-5">
-//             <h1 className="me-5">{(data[0] && data[0].jobRef) || ""}</h1>
-//             {topBanner ? (
-//               <h2 className="me-3" style={topBanner.style}>
-//                 {topBanner.text}
-//               </h2>
-//             ) : (
-//               <h2 className="me-3">{/* fallback is handled in topBanner */}</h2>
-//             )}
-//           </div>
-//         )}
-
-//         <Accordion defaultActiveKey={["0", "1"]} alwaysOpen>
-//           {/* ข้อมูลลูกค้า */}
-//           <Accordion.Item eventKey="0" className="accordion-item">
-//             <Accordion.Header className="accordion-header">
-//               <IoMdPeople className="me-4 accordion-icon" /> ข้อมูลลูกค้า
-//             </Accordion.Header>
-//             <Accordion.Body>
-//               {data && data.length > 0 && (
-//                 <div className="product-details row">
-//                   <div className="col-6">
-//                     <p className="mt-4">
-//                       <strong>ชื่อ</strong>
-//                     </p>
-//                     <p>{data[0].customer_firstname}</p>
-//                     <p className="mt-4">
-//                       <strong>อายุ</strong>
-//                     </p>
-//                     <p>{data[0].customer_old}</p>
-//                     <p className="mt-4">
-//                       <strong>Username</strong>
-//                     </p>
-//                     <p>{data[0].username}</p>
-//                     <p className="mt-4">
-//                       <strong>Line ID</strong>
-//                     </p>
-//                     <p>{data[0].line_id}</p>
-//                     <p className="mt-4">
-//                       <strong>ที่อยู่</strong>
-//                     </p>
-//                     <p>{data[0].address}</p>
-//                   </div>
-//                   <div className="col-6">
-//                     <p className="mt-4">
-//                       <strong>นามสกุล</strong>
-//                     </p>
-//                     <p>{data[0].customer_lastname}</p>
-//                     <p className="mt-4">
-//                       <strong>Email</strong>
-//                     </p>
-//                     <p>{data[0].email}</p>
-//                     <p className="mt-4">
-//                       <strong>ช่องทางติดต่อ</strong>
-//                     </p>
-//                     <p>{data[0].customer_contact}</p>
-//                     <p className="mt-4">
-//                       <strong>เบอร์โทรศัพท์</strong>
-//                     </p>
-//                     <p>{data[0].phone}</p>
-//                   </div>
-//                 </div>
+//     <ConfigProvider
+//       componentSize="large"
+//       theme={{ token: { fontSize: 16, lineHeight: 1.8 } }}
+//     >
+//       <div style={{ padding: 16 }}>
+//         {/* Header */}
+//         <Card
+//           bordered={false}
+//           style={{ borderRadius: 16, marginBottom: 16 }}
+//           bodyStyle={{ padding: 16 }}
+//         >
+//           <Row align="middle" gutter={[16, 16]}>
+//             <Col flex="none">
+//               <Tag
+//                 color="geekblue"
+//                 style={{ fontSize: 16, padding: "6px 12px" }}
+//               >
+//                 {data[0]?.jobRef || jobRef || "-"}
+//               </Tag>
+//             </Col>
+//             <Col flex="auto">
+//               {topBanner && (
+//                 <Tag
+//                   color={topBanner.color}
+//                   style={{ fontSize: 14, padding: "4px 10px" }}
+//                 >
+//                   {topBanner.text}
+//                 </Tag>
 //               )}
-//             </Accordion.Body>
-//           </Accordion.Item>
+//             </Col>
+//             <Col flex="none">
+//               <Space>
+//                 <Dropdown
+//                   menu={editMenu}
+//                   trigger={["click"]}
+//                   disabled={isLocked}
+//                 >
+//                   <Button icon={<EditOutlined />} disabled={isLocked}>
+//                     แก้ไขงาน <DownOutlined />
+//                   </Button>
+//                 </Dropdown>
+//                 <Button
+//                   danger
+//                   icon={<DeleteOutlined />}
+//                   onClick={() => deleteData(jobRef)}
+//                 >
+//                   ลบข้อมูล
+//                 </Button>
+//               </Space>
+//             </Col>
+//           </Row>
+//         </Card>
 
-//           {/* ข้อมูลสินค้า */}
-//           <Accordion.Item eventKey="1" className="accordion-item">
-//             <Accordion.Header className="accordion-header">
-//               <PiPackageFill className="me-4 accordion-icon" /> ข้อมูลสินค้า
-//             </Accordion.Header>
-//             <Accordion.Body>
-//               {data && data.length > 0 && (
-//                 <div className="product-details row">
-//                   <div className="col-6">
-//                     <p className="mt-4">
-//                       <strong>Serial Number</strong>
-//                     </p>
-//                     <p>{data[0].serialNumber}</p>
-//                     <p className="mt-4">
-//                       <strong>Brand</strong>
-//                     </p>
-//                     <p>{data[0].brand}</p>
-//                     <p className="mt-4">
-//                       <strong>จำนวนสินค้าที่ซ่อม</strong>
-//                     </p>
-//                     <p>{data[0].unit}</p>
-//                     <p className="mt-4">
-//                       <strong>รายละเอียดสินค้า</strong>
-//                     </p>
-//                     <p>{data[0].description}</p>
-//                     <p className="mt-4">
-//                       <strong>วันที่เปิดซ่อม</strong>
-//                     </p>
-//                     <p>{data[0].createAt}</p>
-//                   </div>
-//                   <div className="col-6">
-//                     <p className="mt-4">
-//                       <strong>ชื่อสินค้า</strong>
-//                     </p>
-//                     <p>{data[0].product_name}</p>
-//                     <p className="mt-4">
-//                       <strong>SKU</strong>
-//                     </p>
-//                     <p>{data[0].sku}</p>
-//                     <p className="mt-4">
-//                       <strong>ประเภทสินค้า</strong>
-//                     </p>
-//                     <p>{data[0].category}</p>
-//                     <p className="mt-4">
-//                       <strong>หน่วย</strong>
-//                     </p>
-//                     <p>{data[0].pcs}</p>
-//                     <p className="mt-4">
-//                       <strong>รูปภาพสินค้า</strong>
-//                     </p>
-//                     <Button
-//                       className="d-flex align-items-center justify-content-between btn-show-image margin-top-100"
-//                       onClick={() => setOpen(!open)}
-//                       aria-controls="example-collapse-text"
-//                       aria-expanded={open}
-//                     >
-//                       <IoImage className="button-icon justify-content-start" />
-//                       <span className="button-text">ดูรูปภาพเพิ่มเติม</span>
-//                     </Button>
-//                     <div style={{ minHeight: "150px" }}>
-//                       <Collapse in={open} dimension="width">
-//                         <div id="example-collapse-text">
-//                           <Card body style={{ width: "400px" }}>
-//                             {data[0].images && data[0].images.length > 0 ? (
-//                               <Carousel>
-//                                 {data[0].images.map((url, index) => (
-//                                   <Carousel.Item key={index}>
-//                                     <img
-//                                       src={url}
-//                                       alt={`รูปที่ ${index + 1}`}
-//                                     />
-//                                   </Carousel.Item>
-//                                 ))}
-//                               </Carousel>
+//         <Row gutter={[16, 16]}>
+//           {/* Left Column: Details & Forms */}
+//           <Col xs={24} lg={14}>
+//             {/* Customer & Product */}
+//             <Card
+//               bordered={false}
+//               style={{ borderRadius: 16, marginBottom: 16 }}
+//             >
+//               <Collapse
+//                 bordered={false}
+//                 defaultActiveKey={["customer", "product"]}
+//               >
+//                 <Panel header="ข้อมูลลูกค้า" key="customer">
+//                   {data && data.length > 0 && (
+//                     <Descriptions column={2} colon={false} size="small">
+//                       <Descriptions.Item label={<b>ชื่อ</b>}>
+//                         {data[0].customer_firstname}
+//                       </Descriptions.Item>
+//                       <Descriptions.Item label={<b>นามสกุล</b>}>
+//                         {data[0].customer_lastname}
+//                       </Descriptions.Item>
+//                       <Descriptions.Item label={<b>อายุ</b>}>
+//                         {data[0].customer_old}
+//                       </Descriptions.Item>
+//                       <Descriptions.Item label={<b>Username</b>}>
+//                         {data[0].username}
+//                       </Descriptions.Item>
+//                       <Descriptions.Item label={<b>Line ID</b>}>
+//                         {data[0].line_id}
+//                       </Descriptions.Item>
+//                       <Descriptions.Item label={<b>Email</b>}>
+//                         {data[0].email}
+//                       </Descriptions.Item>
+//                       <Descriptions.Item label={<b>ช่องทางติดต่อ</b>}>
+//                         {data[0].customer_contact}
+//                       </Descriptions.Item>
+//                       <Descriptions.Item label={<b>เบอร์โทรศัพท์</b>}>
+//                         {data[0].phone}
+//                       </Descriptions.Item>
+//                       <Descriptions.Item label={<b>ที่อยู่</b>} span={2}>
+//                         {data[0].address}
+//                       </Descriptions.Item>
+//                     </Descriptions>
+//                   )}
+//                 </Panel>
+
+//                 <Panel header="ข้อมูลสินค้า" key="product">
+//                   {data && data.length > 0 && (
+//                     <>
+//                       <Descriptions column={2} colon={false} size="small">
+//                         <Descriptions.Item label={<b>Serial Number</b>}>
+//                           {data[0].serialNumber}
+//                         </Descriptions.Item>
+//                         <Descriptions.Item label={<b>ชื่อสินค้า</b>}>
+//                           {data[0].product_name}
+//                         </Descriptions.Item>
+//                         <Descriptions.Item label={<b>Brand</b>}>
+//                           {data[0].brand}
+//                         </Descriptions.Item>
+//                         <Descriptions.Item label={<b>SKU</b>}>
+//                           {data[0].sku}
+//                         </Descriptions.Item>
+//                         <Descriptions.Item label={<b>ประเภทสินค้า</b>}>
+//                           {data[0].category}
+//                         </Descriptions.Item>
+//                         <Descriptions.Item label={<b>หน่วย</b>}>
+//                           {data[0].pcs}
+//                         </Descriptions.Item>
+//                         <Descriptions.Item label={<b>จำนวนสินค้าที่ซ่อม</b>}>
+//                           {data[0].unit}
+//                         </Descriptions.Item>
+//                         <Descriptions.Item label={<b>วันที่เปิดซ่อม</b>}>
+//                           {data[0].createAt}
+//                         </Descriptions.Item>
+//                         <Descriptions.Item
+//                           label={<b>รายละเอียดสินค้า</b>}
+//                           span={2}
+//                         >
+//                           {data[0].description}
+//                         </Descriptions.Item>
+//                       </Descriptions>
+
+//                       {/* Product Images */}
+//                       <Space
+//                         direction="vertical"
+//                         size="small"
+//                         style={{ width: "100%", marginTop: 8 }}
+//                       >
+//                         <Button
+//                           icon={<PictureOutlined />}
+//                           onClick={() => setOpen((v) => !v)}
+//                           type="default"
+//                           size="small"
+//                         >
+//                           ดูรูปภาพสินค้า
+//                         </Button>
+//                         {open && (
+//                           <Card
+//                             size="small"
+//                             bordered
+//                             style={{ borderRadius: 12 }}
+//                           >
+//                             {data[0].image ? (
+//                               <Image.PreviewGroup>
+//                                 <Image
+//                                   src={data[0].image}
+//                                   alt="Product"
+//                                   style={{ maxWidth: 360, borderRadius: 8 }}
+//                                 />
+//                               </Image.PreviewGroup>
 //                             ) : (
-//                               <p>ไม่มีรูปภาพแสดง</p>
+//                               <div style={{ color: "#999" }}>
+//                                 ไม่มีรูปภาพแสดง
+//                               </div>
 //                             )}
 //                           </Card>
-//                         </div>
-//                       </Collapse>
-//                     </div>
-//                     <img
-//                       src={data.images}
-//                       alt="Image from server"
-//                       className="image-show-detail"
-//                     />
-//                   </div>
-//                 </div>
-//               )}
-//             </Accordion.Body>
-//           </Accordion.Item>
-//         </Accordion>
-//         {/* ... ข้อมูลลูกค้า / ข้อมูลสินค้า / Remark + Upload ... */}
+//                         )}
 
-//         {/* <div className="d-flex flex-column mt-5">
-//           <div>
-//             <Form.Item
-//               name="Remark"
-//               label="หมายเหตุ ( หากมี )"
-//               rules={[{ required: true }, { type: "string" }]}
-//               className="d-flex mt-5"
+//                         {/* Claim Images */}
+//                         <Button
+//                           icon={<PictureOutlined />}
+//                           onClick={() => setopenClaim((v) => !v)}
+//                           type="default"
+//                           size="small"
+//                         >
+//                           ดูรูปภาพสินค้าที่เคลม
+//                         </Button>
+//                         {openClaim && (
+//                           <Card
+//                             size="small"
+//                             bordered
+//                             style={{ borderRadius: 12 }}
+//                           >
+//                             {data[0].images && data[0].images.length > 0 ? (
+//                               <Image.PreviewGroup>
+//                                 <Row gutter={[8, 8]}>
+//                                   {data[0].images.map((url, idx) => (
+//                                     <Col key={`img-${idx}`} span={12}>
+//                                       <Image
+//                                         src={url}
+//                                         alt={`Claim ${idx + 1}`}
+//                                         style={{
+//                                           width: "100%",
+//                                           height: 180,
+//                                           objectFit: "cover",
+//                                           borderRadius: 8,
+//                                         }}
+//                                       />
+//                                     </Col>
+//                                   ))}
+//                                 </Row>
+//                               </Image.PreviewGroup>
+//                             ) : (
+//                               <div style={{ color: "#999" }}>
+//                                 ไม่มีรูปภาพแสดง
+//                               </div>
+//                             )}
+//                           </Card>
+//                         )}
+//                       </Space>
+//                     </>
+//                   )}
+//                 </Panel>
+//               </Collapse>
+//             </Card>
+
+//             {/* Remark + Upload */}
+//             <Card
+//               bordered={false}
+//               style={{ borderRadius: 16, marginBottom: 16 }}
 //             >
-//               <div className="ms-2">
-//                 <Input.TextArea
-//                   prefix={<MdOutlineDescription />}
-//                   className="form-item-custom-size-note"
-//                 />
-//               </div>
-//             </Form.Item>
-//           </div>
-//           <div>
-//             <Form>
-//               <Form.Item
-//                 name="image"
-//                 label="รูปภาพสินค้า"
-//                 valuePropName="fileList"
-//                 getValueFromEvent={normFile}
-//                 rules={[{ required: true, message: "กรุณาอัปโหลดรูปภาพ" }]}
-//                 className="form-item-custom-size-detail"
-//               >
-//                 <div className="ms-5">
+//               <Form form={form} layout="vertical" onFinish={onFinish}>
+//                 <Form.Item
+//                   name="Remark"
+//                   label="หมายเหตุ (หากมี)"
+//                   rules={[{ required: true, message: "กรุณากรอกหมายเหตุ" }]}
+//                 >
+//                   <Input.TextArea
+//                     rows={4}
+//                     placeholder="พิมพ์หมายเหตุที่นี่..."
+//                   />
+//                 </Form.Item>
+
+//                 <Form.Item
+//                   name="image"
+//                   label="รูปภาพสินค้า"
+//                   valuePropName="fileList"
+//                   getValueFromEvent={normFile}
+//                   rules={[{ required: true, message: "กรุณาอัปโหลดรูปภาพ" }]}
+//                 >
 //                   <Dragger {...uploadProps}>
+//                     <p className="ant-upload-drag-icon">
+//                       <PictureOutlined />
+//                     </p>
 //                     <p className="ant-upload-text">
 //                       คลิกหรือลากไฟล์มาวางที่นี่
 //                     </p>
@@ -1663,295 +1851,236 @@ export default function ShowDetail() {
 //                       รองรับการอัปโหลดไฟล์เดียวหรือหลายไฟล์
 //                     </p>
 //                   </Dragger>
-//                 </div>
-//               </Form.Item>
-//             </Form>
-//           </div>
-//         </div> */}
-//       </div>
+//                 </Form.Item>
 
-//       {/* Right column: Timeline + Actions */}
-//       <div className="contain-status d-flex flex-column align-items-center">
-//         <h1 className="text-center mb-3 mt-5">สถานะ</h1>
-//         <div className="timeline-wrapper">
-//           <Timeline mode="left" items={timelineItems} />
-//         </div>
-
-//         {/* ====== Action Area ====== */}
-//         <div className="d-flex justify-content-center gap-3 mt-3 mb-2">
-//           {/* ปิดแก้ไขทั้งหมดเมื่อถูกล็อก */}
-//           <div
-//             className={`dropdown ${isLocked ? "disabled" : ""}`}
-//             onMouseEnter={() => !isLocked && setIsEditDropdownOpen(true)}
-//             onMouseLeave={() => {
-//               setIsEditDropdownOpen(false);
-//               setIsDetailDropdownOpen(false);
-//               setIsStatusDropdownOpen(false);
-//             }}
-//           >
-//             <button
-//               className="btn btn-secondary dropdown-toggle btn-showData-Edit"
-//               type="button"
-//               aria-expanded={isEditDropdownOpen}
-//               disabled={isLocked}
-//               title={isLocked ? "สถานะถูกล็อก" : ""}
-//             >
-//               แก้ไขงาน
-//             </button>
-
-//             {isEditDropdownOpen && (
-//               <ul className="dropdown-menu show">
-//                 {/* Edit Status */}
-//                 <li
-//                   className="dropdown-hover-right"
-//                   onMouseEnter={() => setIsStatusDropdownOpen(true)}
-//                   onMouseLeave={() => setIsStatusDropdownOpen(false)}
-//                 >
-//                   <a
-//                     className="dropdown-item"
-//                     href="#"
-//                     onClick={(e) => {
-//                       e.preventDefault();
-//                       setEditMode("status");
-//                     }}
+//                 <Space>
+//                   <Button
+//                     type="primary"
+//                     icon={<SaveOutlined />}
+//                     onClick={() => form.submit()}
 //                   >
-//                     แก้ไขสถานะงาน
-//                   </a>
-//                 </li>
+//                     บันทึก
+//                   </Button>
+//                   <Button onClick={() => form.resetFields()}>ล้างข้อมูล</Button>
+//                 </Space>
+//               </Form>
+//             </Card>
+//           </Col>
 
-//                 {/* Edit Details (ยังเปิดได้ ถ้าต้องการให้ล็อกทั้งหมด ให้ย้ายไปอยู่ใต้ isLocked เงื่อนไข) */}
-//                 <li
-//                   className="dropdown-hover-right"
-//                   onMouseEnter={() => setIsDetailDropdownOpen(true)}
-//                   onMouseLeave={() => setIsDetailDropdownOpen(false)}
-//                 >
-//                   <a className="dropdown-item">แก้ไขรายละเอียดงาน</a>
-//                   {isDetailDropdownOpen && (
-//                     <ul
-//                       className="dropdown-menu show"
-//                       style={{ left: "100%", top: 0 }}
-//                     >
-//                       <li>
-//                         <a
-//                           className="dropdown-item"
-//                           href="#"
-//                           onClick={(e) => {
-//                             e.preventDefault();
-//                             setEditMode("customer");
-//                           }}
-//                         >
-//                           แก้ไขข้อมูลลูกค้า
-//                         </a>
-//                       </li>
-//                       <li>
-//                         <a
-//                           className="dropdown-item"
-//                           href="#"
-//                           onClick={(e) => {
-//                             e.preventDefault();
-//                             setEditMode("product");
-//                           }}
-//                         >
-//                           แก้ไขข้อมูลสินค้า
-//                         </a>
-//                       </li>
-//                     </ul>
-//                   )}
-//                 </li>
-//               </ul>
-//             )}
-//           </div>
-
-//           <Button
-//             danger
-//             className="btn-showData-delete"
-//             onClick={() => deleteData(jobRef)}
-//           >
-//             ลบข้อมูล
-//           </Button>
-//         </div>
-
-//         {/* ====== Status Editor ====== */}
-//         {editMode === "status" && !isLocked && (
-//           <div className="d-flex justify-content-center gap-2 mt-3">
-//             <div className="w-100">
-//               <Select
-//                 placeholder="เลือกสถานะใหม่"
-//                 style={{ width: "100%" }}
-//                 onChange={handleStatusChange}
-//                 // ให้เลือกได้เฉพาะขั้นถัดไป + ยกเลิก
-//                 options={allMenuItems
-//                   .filter((m) => nextOptions.includes(m.key))
-//                   .map((m) => ({ label: m.label, value: m.key }))}
+//           {/* Right Column: Timeline + Actions */}
+//           <Col xs={24} lg={10}>
+//             <Card
+//               bordered={false}
+//               style={{ borderRadius: 16, marginBottom: 16 }}
+//             >
+//               <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
+//                 สถานะ
+//               </div>
+//               <Timeline
+//                 mode="left"
+//                 items={timelineItems}
+//                 style={{ marginTop: 8 }}
 //               />
-//             </div>
-//             <Button
-//               type="primary"
-//               onClick={handleConfirmStatus}
-//               disabled={Object.keys(changedStatus).length === 0}
-//             >
-//               ยืนยัน
-//             </Button>
-//             <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
-//           </div>
-//         )}
 
-//         {editMode === "customer" && (
-//           <div className="mt-4 p-3 border rounded-3">
-//             <h5 className="mb-3">แก้ไขข้อมูลลูกค้า</h5>
-//             <Form
-//               form={customerForm}
-//               layout="vertical"
-//               onFinish={handleSaveCustomer}
-//             >
-//               <div className="row">
-//                 <div className="col-md-6">
-//                   <Form.Item
-//                     name="customer_firstname"
-//                     label="ชื่อ"
-//                     rules={[{ required: true }]}
-//                   >
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-6">
-//                   <Form.Item
-//                     name="customer_lastname"
-//                     label="นามสกุล"
-//                     rules={[{ required: true }]}
-//                   >
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-4">
-//                   <Form.Item name="customer_old" label="อายุ">
-//                     <InputNumber min={1} max={100} />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-4">
-//                   <Form.Item
-//                     name="phone"
-//                     label="เบอร์โทรศัพท์"
-//                     rules={[{ required: true }]}
-//                   >
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-4">
-//                   <Form.Item name="email" label="Email">
-//                     <Input type="email" />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-6">
-//                   <Form.Item name="username" label="Username">
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-6">
-//                   <Form.Item name="line_id" label="Line ID">
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-6">
-//                   <Form.Item
-//                     name="customer_contact"
-//                     label="ช่องทางติดต่อ"
-//                     rules={[{ required: true }, { type: "string" }]}
-//                     className="form-item-custom-size mb-4"
-//                   >
-//                     <Select placeholder="กรุณาเลือกช่องทางติดต่อ">
-//                       <Select.Option value="phone">เบอร์โทรศัพท์</Select.Option>
-//                       <Select.Option value="line">Line</Select.Option>
-//                       <Select.Option value="address">
-//                         ที่อยู่ลูกค้า
-//                       </Select.Option>
-//                     </Select>
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-12">
-//                   <Form.Item name="address" label="ที่อยู่">
-//                     <Input.TextArea rows={3} />
-//                   </Form.Item>
-//                 </div>
-//               </div>
-//               <div className="d-flex gap-2">
-//                 <Button type="primary" htmlType="submit">
-//                   บันทึก
-//                 </Button>
-//                 <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
-//               </div>
-//             </Form>
-//           </div>
-//         )}
+//               {/* Status Editor */}
+//               {editMode === "status" && !isLocked && (
+//                 <Space
+//                   direction="vertical"
+//                   style={{ width: "100%", marginTop: 8 }}
+//                 >
+//                   <Select
+//                     placeholder="เลือกสถานะใหม่"
+//                     style={{ width: "100%" }}
+//                     onChange={handleStatusChange}
+//                     options={allMenuItems
+//                       .filter((m) => nextOptions.includes(m.key))
+//                       .map((m) => ({ label: m.label, value: m.key }))}
+//                   />
+//                   <Space>
+//                     <Button
+//                       type="primary"
+//                       onClick={handleConfirmStatus}
+//                       disabled={Object.keys(changedStatus).length === 0}
+//                     >
+//                       ยืนยัน
+//                     </Button>
+//                     <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
+//                   </Space>
+//                 </Space>
+//               )}
 
-//         {editMode === "product" && (
-//           <div className="mt-4 p-3 border rounded-3">
-//             <h5 className="mb-3">แก้ไขข้อมูลสินค้า</h5>
-//             <Form
-//               form={productForm}
-//               layout="vertical"
-//               onFinish={handleSaveProduct}
-//             >
-//               <div className="row">
-//                 <div className="col-md-6">
-//                   <Form.Item
-//                     name="product_name"
-//                     label="ชื่อสินค้า"
-//                     rules={[{ required: true }]}
+//               {editMode === "customer" && (
+//                 <Card
+//                   size="small"
+//                   bordered
+//                   style={{ borderRadius: 12, marginTop: 12 }}
+//                 >
+//                   <div style={{ fontWeight: 600, marginBottom: 8 }}>
+//                     แก้ไขข้อมูลลูกค้า
+//                   </div>
+//                   <Form
+//                     form={customerForm}
+//                     layout="vertical"
+//                     onFinish={handleSaveCustomer}
 //                   >
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-6">
-//                   <Form.Item name="sku" label="SKU">
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-4">
-//                   <Form.Item name="brand" label="Brand">
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-4">
-//                   <Form.Item name="category" label="ประเภทสินค้า">
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-4">
-//                   <Form.Item name="pcs" label="หน่วย">
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-6">
-//                   <Form.Item name="serialNumber" label="Serial Number">
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-6">
-//                   <Form.Item name="unit" label="จำนวนสินค้าที่ซ่อม">
-//                     <Input />
-//                   </Form.Item>
-//                 </div>
-//                 <div className="col-md-12">
-//                   <Form.Item name="description" label="รายละเอียดสินค้า">
-//                     <Input.TextArea rows={3} />
-//                   </Form.Item>
-//                 </div>
-//               </div>
-//               <div className="d-flex gap-2">
-//                 <Button type="primary" htmlType="submit">
-//                   บันทึก
-//                 </Button>
-//                 <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
-//               </div>
-//             </Form>
-//           </div>
-//         )}
+//                     <Row gutter={12}>
+//                       <Col span={12}>
+//                         <Form.Item
+//                           name="customer_firstname"
+//                           label="ชื่อ"
+//                           rules={[{ required: true }]}
+//                         >
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={12}>
+//                         <Form.Item
+//                           name="customer_lastname"
+//                           label="นามสกุล"
+//                           rules={[{ required: true }]}
+//                         >
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={8}>
+//                         <Form.Item name="customer_old" label="อายุ">
+//                           <InputNumber
+//                             min={1}
+//                             max={100}
+//                             style={{ width: "100%" }}
+//                           />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={8}>
+//                         <Form.Item
+//                           name="phone"
+//                           label="เบอร์โทรศัพท์"
+//                           rules={[{ required: true }]}
+//                         >
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={8}>
+//                         <Form.Item name="email" label="Email">
+//                           <Input type="email" />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={12}>
+//                         <Form.Item name="username" label="Username">
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={12}>
+//                         <Form.Item name="line_id" label="Line ID">
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={12}>
+//                         <Form.Item
+//                           name="customer_contact"
+//                           label="ช่องทางติดต่อ"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Select placeholder="กรุณาเลือกช่องทางติดต่อ">
+//                             <Option value="phone">เบอร์โทรศัพท์</Option>
+//                             <Option value="line">Line</Option>
+//                             <Option value="address">ที่อยู่ลูกค้า</Option>
+//                           </Select>
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={24}>
+//                         <Form.Item name="address" label="ที่อยู่">
+//                           <Input.TextArea rows={3} />
+//                         </Form.Item>
+//                       </Col>
+//                     </Row>
+//                     <Space>
+//                       <Button type="primary" htmlType="submit">
+//                         บันทึก
+//                       </Button>
+//                       <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
+//                     </Space>
+//                   </Form>
+//                 </Card>
+//               )}
 
-//         <div className="d-grid justify-content-center mt-4">
-//           <button className="btn-exportData">Export Data</button>
-//         </div>
+//               {editMode === "product" && (
+//                 <Card
+//                   size="small"
+//                   bordered
+//                   style={{ borderRadius: 12, marginTop: 12 }}
+//                 >
+//                   <div style={{ fontWeight: 600, marginBottom: 8 }}>
+//                     แก้ไขข้อมูลสินค้า
+//                   </div>
+//                   <Form
+//                     form={productForm}
+//                     layout="vertical"
+//                     onFinish={handleSaveProduct}
+//                   >
+//                     <Row gutter={12}>
+//                       <Col span={12}>
+//                         <Form.Item
+//                           name="product_name"
+//                           label="ชื่อสินค้า"
+//                           rules={[{ required: true }]}
+//                         >
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={12}>
+//                         <Form.Item name="sku" label="SKU">
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={8}>
+//                         <Form.Item name="brand" label="Brand">
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={8}>
+//                         <Form.Item name="category" label="ประเภทสินค้า">
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={8}>
+//                         <Form.Item name="pcs" label="หน่วย">
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={12}>
+//                         <Form.Item name="serialNumber" label="Serial Number">
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={12}>
+//                         <Form.Item name="unit" label="จำนวนสินค้าที่ซ่อม">
+//                           <Input />
+//                         </Form.Item>
+//                       </Col>
+//                       <Col span={24}>
+//                         <Form.Item name="description" label="รายละเอียดสินค้า">
+//                           <Input.TextArea rows={3} />
+//                         </Form.Item>
+//                       </Col>
+//                     </Row>
+//                     <Space>
+//                       <Button type="primary" htmlType="submit">
+//                         บันทึก
+//                       </Button>
+//                       <Button onClick={handleCancelEditAll}>ยกเลิก</Button>
+//                     </Space>
+//                   </Form>
+//                 </Card>
+//               )}
+
+//               <div style={{ marginTop: 12, textAlign: "center" }}>
+//                 <Button type="default">Export Data</Button>
+//               </div>
+//             </Card>
+//           </Col>
+//         </Row>
 //       </div>
-//     </div>
+//     </ConfigProvider>
 //   );
 // }
