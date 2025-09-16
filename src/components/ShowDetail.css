@@ -1,107 +1,266 @@
-/* .claim-view{
-  --indigo:#4f46e5; --cyan:#06b6d4;
-  --slate-900:#0f172a; --slate-700:#334155; --slate-500:#64748b;
+/* โทนสีหลัก */
+:root{
+  --brand-blue:#3b82f6;
+  --brand-indigo:#6366f1;
+  --brand-sky:#0ea5e9;
+  --text-strong:#0f172a;
+  --text-muted:#475569;
+  --bg-card:#ffffff;
+  --bg-soft:#f1f5ff;
+  --border:#e5e7eb;
 }
 
-/* หัวข้อใน Card */
-.claim-view .section-title{
-  display:flex; align-items:center; gap:10px;
-  font-weight:800; font-size:1.25rem; color:var(--slate-700);
-  margin:6px 0 10px; padding:6px 10px; border-radius:12px;
-  background:linear-gradient(90deg, rgba(79,70,229,.08), rgba(6,182,212,.08));
+.claim-view.colorful .acc-custom .accordion-button{
+  font-weight:700;
+  color:#0f172a;
+  background: linear-gradient(90deg, #e8f1ff, #f6f9ff);
+  border-radius:12px !important;
+  padding:14px 16px;
 }
-.claim-view .section-title-icon{ font-size:1.3rem; color:var(--indigo); }
-
-/* กล่องรายละเอียด */
-.claim-view .section-card{
-  /* background:#fff; border:1px solid #e9edf9; border-left:6px solid var(--indigo); */
-  border-radius:16px; padding:12px; box-shadow:0 8px 20px rgba(79,70,229,.06);
-  font-size:1.06rem; color:var(--slate-900);
+.claim-view.colorful .accordion-item{
+  background:transparent;
+  border:none;
+  margin-bottom:14px;
 }
-
-/* กริดข้อมูล: กระชับ ไม่เว้นโล่ง */
-.claim-view .details-grid{
-  display:grid; 
-  grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
-  gap:10px 14px;
+.section-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 6px 18px rgba(2,8,20,0.04);
 }
 
-/* แถว label-value */
-.claim-view .kv{
-  display:grid; grid-template-columns:120px 1fr; align-items:center;
-  background:#fff; border:1px solid #eef1fb; border-radius:12px; padding:8px 10px;
-}
-@media (min-width:1200px){ .claim-view .kv{ grid-template-columns:140px 1fr; } }
-.claim-view .kv .label{ color:var(--slate-500); font-weight:700; }
-.claim-view .kv .value{ color:var(--slate-900); font-weight:600; word-break:break-word; white-space:pre-line; }
-
-/* ฟิลด์ยาวให้กิน 2 คอลัมน์เมื่อจอกว้าง */
-@media (min-width:700px){ .claim-view .kv-span-2{ grid-column: span 2; } }
-
-/* แท็ก */
-.claim-view .chip{ display:inline-block; padding:4px 10px; border-radius:999px; background:#eef7ff; border:1px solid #e0ecff; font-weight:700; }
-.claim-view .chip-indigo{ background:#eef2ff; border-color:#e0e7ff; }
-
-/* Media */
-.claim-view .media-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin-top:12px; }
-.claim-view .media-card{ background:#fff; border:1px solid #e9edf9; border-radius:14px; padding:12px; }
-.claim-view .media-title{ font-weight:800; color:var(--slate-700); margin-bottom:8px; }
-.claim-view .btn-show-image{ display:flex; align-items:center; gap:8px; font-weight:700!important; border:none!important; border-radius:12px!important; padding:10px 14px!important; background:linear-gradient(90deg,var(--indigo),var(--cyan))!important; color:#fff!important; box-shadow:0 8px 18px rgba(6,182,212,.18); transition:transform .08s ease; }
-.claim-view .btn-show-image:active{ transform:scale(.98); }
-.claim-view .button-icon{ font-size:1.2rem; }
-.claim-view .media-collapse{ margin-top:10px; }
-.claim-view .gallery-grid{ display:grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
-.claim-view .gallery-img{ width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:10px; border:1px solid #e8eaf5; box-shadow:0 6px 16px rgba(15,23,42,.06); }
-.claim-view .empty-text{ color:var(--slate-500); margin:6px 0 0 2px; }
-
-/* ระยะห่าง */
-.claim-view .section-title + .section-card{ margin-top:8px; }
-.claim-view .section-card + .section-title{ margin-top:14px; }
- */
-
-/* โครงพื้นฐาน + มุมโค้ง */
-.acc-custom .acc-item{
-  border:1px solid #f0f2f6;
-  border-radius:20px !important;
-  overflow:hidden;                    /* สำคัญ: ให้มุมมนตอนกาง */
-}
-.acc-custom .acc-item + .acc-item{ margin-top:12px; }
-
-.acc-custom .accordion-button{
-  font-weight:800; font-size:1.05rem; padding:12px 16px;
-  box-shadow:none; transition:filter .15s ease;
-  border-radius:20px !important;      /* โค้งเวลาพับ */
-}
-/* เมื่อกาง ให้ตัดส่วนล่างเพื่อแนบกับ body */
-.acc-custom .accordion-button:not(.collapsed){
-  border-bottom-left-radius:0 !important;
-  border-bottom-right-radius:0 !important;
+/* หัวข้อย่อย */
+.subsection{margin-bottom:18px;}
+.subsection:last-child{margin-bottom:0;}
+.subsection-title{
+  font-weight:700;
+  color:var(--text-strong);
+  font-size:15px;
+  margin:8px 0 12px 0;
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:10px;
+  background: linear-gradient(90deg, #eef5ff, #eaf7ff);
+  border:1px dashed #cfe3ff;
 }
 
-/* ไอคอน caret ให้มองเห็นบนพื้นเข้ม */
-.acc-custom .accordion-button::after{ filter: invert(1); }
-.acc-custom .acc-item .acc-icon{ color:#fff; }
+/* กริดข้อมูล */
+.kv-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap:12px 18px;
+}
+@media (max-width: 768px){
+  .kv-grid{grid-template-columns:1fr;}
+}
+.kv{
+  display:grid;
+  grid-template-columns: 160px 1fr;
+  align-items:start;
+  column-gap:12px;
+  padding:10px 12px;
+  background: #fafcff;
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.kv .label{
+  color:#334155;
+  font-weight:600;
+}
+.kv .value{
+  color:#0f172a;
+}
+.kv .value.mono{font-family: ui-monospace, SFMono-Regular, Menlo, monospace;}
+.kv .value.strong{font-weight:700;}
+.kv.kv-span-2{grid-column:1 / -1;}
+/* ชิปสี */
+.chip{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:#f8fafc;
+  font-weight:600;
+  font-size:12px;
+}
+.chip-indigo{background:#eef2ff;border-color:#c7d2fe;color:#3730a3;}
+.chip-blue{background:#e0f2fe;border-color:#bae6fd;color:#075985;}
 
-/* ---------- ธีม ลูกค้า (ส้มเข้ม / ส้มอ่อน) ---------- */
-.acc-custom .acc-customer .accordion-button,
-.acc-custom .acc-customer .accordion-button:not(.collapsed){
-  background:#126B8E;   /* header: ส้มเข้ม */
-  color:#fff;
+/* โซนมีเดีย */
+.media-grid{
+  display:grid;
+  /* grid-template-columns: repeat(2, minmax(0,1fr)); */
+  gap:16px;
+  margin-top:12px;
 }
-.acc-custom .acc-customer .accordion-body{
-  background:#DDF1FC;   /* body: ส้มอ่อน */
-  border-top:1px solid #E7F0F4;
-  padding:12px 16px;
+@media (max-width: 900px){
+  .media-grid{grid-template-columns:1fr;}
+}
+.media-card{
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:#fff;
+  padding:14px;
+}
+.media-title{
+  font-weight:700;
+  margin-bottom:10px;
+  color:#0f172a;
+}
+.btn-show-image{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border-radius:12px !important;
+  border:none !important;
+  background:linear-gradient(90deg, var(--brand-blue), var(--brand-indigo)) !important;
+  color:#fff !important;
+  padding:8px 14px !important;
+  box-shadow:0 8px 16px rgba(59,130,246,0.2);
+}
+.button-icon{font-size:18px;}
+.media-collapse{margin-top:10px;}
+.gallery-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:10px;
 }
 
-/* ---------- ธีม สินค้า (แดงเข้ม / ชมพูอ่อน) ---------- */
-.acc-custom .acc-product .accordion-button,
-.acc-custom .acc-product .accordion-button:not(.collapsed){
-  background:#116E6C;   /* header: แดงเข้ม */
-  color:#fff;
+.media-card,
+.media-collapse,
+.gallery-grid{
+  overflow: visible;
+  position: relative; /* ให้ z-index ของรูปทำงานข้ามพ่อแม่ได้ */
 }
-.acc-custom .acc-product .accordion-body{
-  background:#d5fffe;   /* body: แดง/ชมพูอ่อน */
-  border-top:1px solid #FAD1D1;
-  padding:12px 16px;
+
+@media (max-width: 768px){
+  .gallery-grid{grid-template-columns: repeat(2, minmax(0,1fr));}
 }
+
+@media (max-width: 575.98px){
+  .gallery-img.is-active{
+    transform: scale(1.8);
+  }
+}
+
+body:has(.gallery-img.is-active)::after{
+  content:"";
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.55);
+  z-index: 9998;
+  pointer-events:none;
+}
+
+.gallery-img{
+  width:100%;
+  height:140px;
+  object-fit:contain;
+  object-position: center;
+  /* border-radius:12px; */
+  /* border:1px solid var(--border); */
+  /* border-radius:12px; */
+  /* border:1px solid var(--border); */
+  transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+  transform-origin: 50% 50%;
+  cursor: zoom-in;
+  display: block;
+  will-change: transform;  
+}
+
+.gallery-img.is-active{
+   position: fixed;
+  top: 50%; left: 50%;
+  /* ซูมจาก 'กลางจอ' เสมอ */
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: 50% 50%;
+
+  width: auto; height: auto;
+  max-width: min(92vw, 1200px);
+  max-height: 92vh;
+
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.4);
+  cursor: zoom-out;
+  z-index: 9999;
+
+  /* เพิ่มแอนิเมชันซูมเข้าให้รู้สึกมาจากกลาง (ไม่พุ่งจากขอบขวา) */
+  animation: zoom-in-center .18s ease-out;
+}
+
+/* แอนิเมชันซูมเข้า “จากกลาง” จริง ๆ */
+@keyframes zoom-in-center{
+  from { transform: translate(-50%, -50%) scale(.82); }
+  to   { transform: translate(-50%, -50%) scale(1); }
+}
+
+
+
+
+/* .gallery-grid { overflow: visible; } */
+.empty-text{
+  color:var(--text-muted);
+  margin:8px 0 0 0;
+}
+
+
+
+/* ถ้าใช้แบบ tebIndex={0} */
+/* .gallery-img{
+  width:100%;
+  height:140px;
+  object-fit:contain;
+  object-position:center;
+  border-radius:12px;
+  border:1px solid var(--border);
+  transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+  cursor: zoom-in;
+  display:block;
+  outline: none; ซ่อนเส้นขอบโฟกัสดีฟอลต์
+} */
+
+/* .gallery-img:focus{
+  transform: scale(1.08);
+  filter: saturate(1.05) contrast(1.05);
+  box-shadow: 0 12px 28px rgba(2,6,23,.18);
+  cursor: zoom-out;
+  z-index: 1;
+} */
+
+/* ทางเลือก: ใส่เส้นโฟกัสแบบสวยๆ เฉพาะตอนกดคีย์บอร์ด */
+/* .gallery-img:focus-visible{
+  box-shadow:
+    0 12px 28px rgba(2,6,23,.18),
+    0 0 0 3px rgba(59,130,246,.3);
+} */
+
+/* ถ้ากลัวล้นกริด */
+/* .gallery-grid{ overflow: visible; } */
+
+/* body:has(.gallery-img:focus)::after{
+  content:"";
+  position: fixed; inset:0;
+  background: rgba(0,0,0,.5);
+  z-index: 9998;
+} */
+
+/* รูปที่โฟกัสลอยกลางจอ */
+/* .gallery-img:focus{
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);   ไม่ต้อง scale แล้ว
+  max-width: min(90vw, 1000px);
+  max-height: 90vh;
+  width: auto; height: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  z-index: 9999;
+  cursor: zoom-out;
+} */
+
+
+
+
+

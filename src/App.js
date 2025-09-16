@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import "./App1.css";
 import "./components/ShowDetail.css";
 import "./components/other/Navbar.css";
+import "./components/Dashboard.css";
+import "./components/CreateForm.css";
 // import "./ShowDetail.css";
 import { Route, Routes } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";

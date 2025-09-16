@@ -49,8 +49,8 @@ export default function Profile() {
 
       setUser((prev) => ({
         ...prev,
-        firstName: userFromApi.service_firstname || prev.firstName,
-        lastName: userFromApi.service_lastname || prev.lastName,
+        firstName: userFromApi.firstName || prev.firstName,
+        lastName: userFromApi.lastName || prev.lastName,
         email: userFromApi.email || prev.email,
         username: userFromApi.username || prev.username,
         serviceID: userFromApi.serviceRef || prev.serviceRef,

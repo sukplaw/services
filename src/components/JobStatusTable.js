@@ -31,6 +31,58 @@ export default function JobStatusTable() {
     getData();
   }, [jobStatus]);
 
+  const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+
+  const daysBetween = (a, b) => {
+    const ms = b.getTime() - a.getTime();
+    return Math.floor(ms / (1000 * 60 * 60 * 24));
+  };
+
+  const rowClassName = (record) => {
+    if (
+      record.jobStatus === "จัดส่งสำเร็จ" ||
+      record.jobStatus === "ยกเลิกการเคลมสินค้า"
+    ) {
+      return "";
+    }
+    return record.remainingTime <= 2 ? "row-red-text" : "pointer-cursor";
+  };
+
+  const computeTimeProgress = (createAtISO, expectedISO) => {
+    const now = new Date();
+    const start = new Date(createAtISO);
+    const end = new Date(expectedISO);
+    const totalMs = Math.max(1, end.getTime() - start.getTime());
+    const remainingDays = daysBetween(now, end);
+
+    let percentRemaining = ((end.getTime() - now.getTime()) / totalMs) * 100;
+    if (remainingDays <= 0) {
+      percentRemaining = 100;
+    } else {
+      percentRemaining = clamp(Math.round(percentRemaining), 0, 100);
+    }
+
+    let colorClass = "bg-success";
+    if (remainingDays <= 5 && remainingDays >= 3) {
+      colorClass = "bg-warning";
+    }
+    if (remainingDays <= 2 && remainingDays > 0) {
+      colorClass = "bg-danger";
+    }
+    if (remainingDays <= 0) {
+      colorClass = "bg-danger";
+    }
+
+    const labelText =
+      remainingDays < 0
+        ? `เลยกำหนด | ${Math.abs(remainingDays)} วัน`
+        : remainingDays === 0
+        ? "ครบเวลาดำเนินการ"
+        : `${remainingDays} วัน`;
+
+    return { percentRemaining, remainingDays, colorClass, labelText };
+  };
+
   //   useEffect(() => {
   //     const fetchDataByStatus = async () => {
   //       setLoading(true);
@@ -100,8 +152,8 @@ export default function JobStatusTable() {
     },
     {
       title: "ชื่อผู้เปิดงาน",
-      dataIndex: "createdBy",
-      key: "createdBy",
+      dataIndex: "serviceRef",
+      key: "serviceRef",
     },
     {
       title: "สถานะ",
@@ -137,19 +189,51 @@ export default function JobStatusTable() {
       title: "ระยะเวลาที่ดำเนินการคงเหลือ",
       dataIndex: "remainingTime",
       key: "remainingTime",
+      align: "center",
       sorter: (a, b) => a.remainingTime - b.remainingTime,
-      defaultSortOrder: "ascend",
+      render: (text, record) => {
+        const { percentRemaining, colorClass, labelText } = computeTimeProgress(
+          record.createAt,
+          record.expected_completion_date
+        );
+        return (
+          <div style={{ minWidth: 240 }}>
+            <div className="progress pretty" title={labelText}>
+              <div
+                className={`progress-bar ${colorClass}`}
+                role="progressbar"
+                style={{
+                  width: `${percentRemaining}%`,
+                  transition: "width .5s ease",
+                }}
+                aria-valuenow={percentRemaining}
+                aria-valuemin="0"
+                aria-valuemax="100"
+              />
+            </div>
+            <div className="d-flex justify-content-between mt-1">
+              <span className="text-muted" style={{ fontSize: 12 }}>
+                ความคืบหน้า
+              </span>
+              <span className="progress-label" style={{ fontSize: 12 }}>
+                ⏳ {labelText}
+              </span>
+            </div>
+          </div>
+        );
+      },
     },
     {
       title: "วันที่แก้ไขสถานะล่าสุด",
-      dataIndex: "updateAt",
-      key: "updateAt",
-      render: (date) => new Date(date).toLocaleDateString("th-TH"),
+      dataIndex: "latestUpdateAt",
+      key: "latestUpdateAt",
+      align: "center",
+      render: (d) => new Date(d).toLocaleDateString("th-TH"),
     },
     {
       title: "ผู้แก้ไขสถานะล่าสุด",
-      dataIndex: "updatedBy",
-      key: "updatedBy",
+      dataIndex: "latestUpdateBy",
+      key: "latestUpdateBy",
     },
   ];
 

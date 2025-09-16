@@ -1,0 +1,65 @@
+.status-box{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  height: 110px;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  box-shadow: 0 6px 14px rgba(2,6,23,0.04);
+}
+.status-box:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(2,6,23,0.08);
+}
+
+/* วงกลมไอคอนไล่เฉด + แสงเงา */
+.status-icon{
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25),
+              0 8px 18px rgba(2,6,23,0.12);
+  flex: 0 0 auto;
+}
+.status-icon-inner{
+  font-size: 26px; /* ขนาดของไอคอน (React node) */
+  line-height: 1;
+}
+
+/* เนื้อหา */
+.status-content{
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+.status-name{
+  font-size: 13px;
+  color: #475569; /* slate-600 */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.status-count{
+  font-weight: 800;
+  font-size: 26px;
+  color: #0f172a; /* slate-900 */
+  letter-spacing: 0.2px;
+}
+.status-hint{
+  font-size: 11px;
+  color: #64748b; /* slate-500 */
+}
+
+/* ปรับระยะบนมือถือให้พอดี */
+@media (max-width: 575.98px){
+  .status-box{ height: 100px; }
+  .status-icon{ width: 52px; height: 52px; }
+  .status-count{ font-size: 24px; }
+}

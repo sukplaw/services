@@ -75,6 +75,32 @@ export default function Dashboard() {
     []
   );
 
+  // 1) ใส่ไว้เหนือ JSX (นอก .map ก็ได้)
+  const STATUS_PALETTES = {
+    เริ่มงาน: { from: "#60a5fa", to: "#3b82f6", bg: "#eff6ff" }, // ฟ้าเริ่มงาน
+    สั่งอะไหล่: { from: "#22d3ee", to: "#06b6d4", bg: "#ecfeff" }, // ฟ้าน้ำทะเล
+    เริ่มการซ่อม: { from: "#a78bfa", to: "#6366f1", bg: "#f5f3ff" }, // ม่วงลงมือซ่อม
+    ซ่อมสำเร็จ: { from: "#34d399", to: "#10b981", bg: "#ecfdf5" }, // เขียวสำเร็จ
+    รอทดสอบ: { from: "#f59e0b", to: "#f97316", bg: "#fff7ed" }, // เหลือง/ส้ม รอ
+    รอจัดส่ง: { from: "#0ea5e9", to: "#0284c7", bg: "#e0f2fe" }, // ฟ้า รอจัดส่ง
+    จัดส่งสำเร็จ: { from: "#22c55e", to: "#16a34a", bg: "#ecfdf5" }, // เขียวสำเร็จ
+    ปิดงาน: { from: "#059669", to: "#047857", bg: "#ecfdf5" }, // เขียวเข้ม ปิดงาน
+    ยกเลิกการเคลมสินค้า: { from: "#ef4444", to: "#dc2626", bg: "#fef2f2" }, // แดง ยกเลิก
+  };
+
+  // เผื่อชื่อไม่ตรง/ไม่มีในแมป ให้มีสำรอง
+  const FALLBACKS = [
+    { from: "#60a5fa", to: "#3b82f6", bg: "#eff6ff" },
+    { from: "#a78bfa", to: "#6366f1", bg: "#f5f3ff" },
+    { from: "#34d399", to: "#10b981", bg: "#ecfdf5" },
+    { from: "#f59e0b", to: "#ef4444", bg: "#fff7ed" },
+    { from: "#22d3ee", to: "#06b6d4", bg: "#ecfeff" },
+    { from: "#f472b6", to: "#ec4899", bg: "#fff1f2" },
+  ];
+
+  const getPalette = (name, idx) =>
+    STATUS_PALETTES[name] ?? FALLBACKS[idx % FALLBACKS.length];
+
   // -------------------- Chart Options Template --------------------
   const baseChart = useMemo(
     () => ({
@@ -447,12 +473,10 @@ export default function Dashboard() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1 className="text-center mb-4 mt-4">Dashboard</h1>
+      <h1 className="text-center mb-5 mt-4">Dashboard</h1>
 
       {/* Filter bar */}
       <div className="mb-4">{FilterBar}</div>
-
-      {/* Summary */}
       <Row gutter={[16, 16]} className="mb-4">
         <Col xs={24} sm={8}>
           {loading ? (
@@ -504,9 +528,11 @@ export default function Dashboard() {
         </Col>
       </Row>
 
-      {/* Product Top (full width) */}
-      <Row className="mb-4">
-        <Col span={24}>
+      {/* Summary */}
+      {/* Charts: 3 อันในแถวเดียว + ทุกอันเป็น Bar */}
+      <Row gutter={[16, 16]} className="mb-4">
+        {/* Products */}
+        <Col xs={24} sm={8}>
           <ChartCard
             title={`จำนวนสินค้าที่เคลมสูงสุดประจำ${getTitleSuffix()}`}
             extra={
@@ -521,10 +547,12 @@ export default function Dashboard() {
               <ApexCharts
                 options={{
                   ...productChart.options,
-                  chart: { ...productChart.options.chart, type: "line" },
+                  chart: { ...productChart.options.chart, type: "bar" },
+                  plotOptions: { bar: { columnWidth: "55%", borderRadius: 6 } },
+                  dataLabels: { enabled: false },
                 }}
                 series={productChart.series}
-                type="line"
+                type="bar"
                 width="100%"
                 height="100%"
               />
@@ -533,11 +561,9 @@ export default function Dashboard() {
             )}
           </ChartCard>
         </Col>
-      </Row>
 
-      {/* Category + Customer */}
-      <Row gutter={[16, 16]} className="mb-4">
-        <Col xs={24} sm={12}>
+        {/* Categories */}
+        <Col xs={24} sm={8}>
           <ChartCard
             title={`ประเภทสินค้าที่ถูกเคลมสูงสุดประจำ${getTitleSuffix()}`}
             extra={
@@ -553,6 +579,8 @@ export default function Dashboard() {
                 options={{
                   ...categoryChart.options,
                   chart: { ...categoryChart.options.chart, type: "bar" },
+                  plotOptions: { bar: { columnWidth: "55%", borderRadius: 6 } },
+                  dataLabels: { enabled: false },
                 }}
                 series={categoryChart.series}
                 type="bar"
@@ -565,7 +593,8 @@ export default function Dashboard() {
           </ChartCard>
         </Col>
 
-        <Col xs={24} sm={12}>
+        {/* Customers */}
+        <Col xs={24} sm={8}>
           <ChartCard
             title={`ลูกค้าที่ส่งเคลมสินค้ามากที่สุดประจำ${getTitleSuffix()}`}
             extra={
@@ -581,6 +610,8 @@ export default function Dashboard() {
                 options={{
                   ...customerChart.options,
                   chart: { ...customerChart.options.chart, type: "bar" },
+                  plotOptions: { bar: { columnWidth: "55%", borderRadius: 6 } },
+                  dataLabels: { enabled: false },
                 }}
                 series={customerChart.series}
                 type="bar"
@@ -599,72 +630,76 @@ export default function Dashboard() {
         style={{
           borderRadius: 16,
           border: "1px solid #eef0f3",
-          boxShadow: "0 10px 20px rgba(2,6,23,0.04)",
+          boxShadow: "0 10px 20px rgba(2,6,23,0.06)",
         }}
         bodyStyle={{ padding: 18 }}
       >
-        <h3 className="text-center mb-3">{`สถานะงานประจำ${getTitleSuffix()}`}</h3>
-        <Row gutter={[12, 12]} justify="center">
-          {(loading ? statusIcons : statusCounts).map((item, idx) => (
-            <Col
-              key={idx}
-              xs={12}
-              sm={8}
-              md={6}
-              lg={6}
-              xl={6}
-              onClick={() => !loading && handleStatusClick(item.name)}
-            >
-              <div
-                className="d-flex flex-column align-items-center text-center"
-                style={{
-                  border: "1px solid #eef0f3",
-                  borderRadius: 14,
-                  padding: 12,
-                  height: 110,
-                  transition: "transform .15s ease, box-shadow .15s ease",
-                  cursor: loading ? "default" : "pointer",
-                  background: "#ffffff",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow =
-                    "0 10px 20px rgba(2,6,23,0.06)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "none";
-                  e.currentTarget.style.transform = "none";
-                }}
+        <h3 className="text-center mt-5 mb-5">{`สถานะงานประจำ${getTitleSuffix()}`}</h3>
+
+        <Row gutter={[14, 14]}>
+          {(loading ? statusIcons : statusCounts).map((item, idx) => {
+            const c = getPalette(item.name, idx); // ← ดึงสีตามสถานะ
+
+            return (
+              <Col
+                key={idx}
+                xs={24} // มือถือ 1 คอลัมน์
+                sm={12} // จอเล็ก 2 คอลัมน์
+                md={8} // >= md เป็น 3 คอลัมน์
+                lg={8}
+                xl={8}
+                onClick={() => !loading && handleStatusClick(item.name)}
               >
-                <span
-                  className="mb-2"
-                  style={{ fontSize: 24, color: "#0f172a" }}
+                <div
+                  className="status-box"
+                  style={{
+                    // กรอบไล่สี + พื้นขาวด้านใน
+                    background: `linear-gradient(#fff,#fff) padding-box, linear-gradient(90deg, ${c.from}, ${c.to}) border-box`,
+                    border: "1px solid transparent",
+                  }}
                 >
-                  {item.icon}
-                </span>
-                <div className="text-muted" style={{ fontSize: 13 }}>
-                  {item.name}
+                  <div
+                    className="status-icon"
+                    style={{
+                      background: `linear-gradient(135deg, ${c.from}, ${c.to})`,
+                    }}
+                  >
+                    <span className="status-icon-inner">{item.icon}</span>
+                  </div>
+
+                  <div className="status-content">
+                    <div className="status-name">{item.name}</div>
+                    <div className="status-count">
+                      {loading ? (
+                        <Skeleton.Input
+                          style={{ width: 48 }}
+                          active
+                          size="small"
+                        />
+                      ) : (
+                        item.count
+                      )}
+                    </div>
+                    {!loading && (
+                      <div className="status-hint">แตะเพื่อดูรายละเอียด</div>
+                    )}
+                  </div>
                 </div>
-                <div className="fw-bold" style={{ fontSize: 22 }}>
-                  {loading ? (
-                    <Skeleton.Input style={{ width: 40 }} active />
-                  ) : (
-                    item.count
-                  )}
-                </div>
-              </div>
-            </Col>
-          ))}
+              </Col>
+            );
+          })}
         </Row>
 
-        <div className="mt-4 text-center">
+        <div className="mt-5 text-center">
           <Button
             type="primary"
             style={{
-              backgroundColor: "#213f66",
-              width: 200,
-              height: 40,
+              background: "linear-gradient(90deg, #0ea5e9, #6366f1)",
+              width: 220,
+              height: 42,
               borderRadius: 10,
+              border: "none",
+              boxShadow: "0 10px 20px rgba(2,6,23,0.08)",
             }}
             onClick={handletoJob}
           >

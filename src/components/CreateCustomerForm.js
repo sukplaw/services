@@ -33,62 +33,164 @@ export default function CreateCustomerForm() {
     <>
       <style>{`
         :root{
-          --g1:#312e81; /* indigo */
-          --g2:#0e7490; /* cyan */
-          --g3:#166534; /* emerald */
+          /* โทนสีเรียบ ไม่มีไล่สี */
+          --primary:#2563eb;   /* blue-600 */
+          --secondary:#0ea5e9; /* sky-500 */
+          --success:#16a34a;   /* green-600 */
+          --warning:#f59e0b;   /* amber-500 */
+          --ink:#0f172a;       /* slate-900 */
+          --muted:#64748b;     /* slate-500 */
+          --bg:#f8fafc;        /* slate-50 */
+          --card:#ffffff;
+          --line:#e5e7eb;
+          --soft:#eef2ff;      /* indigo-50 */
         }
 
         .page-container{
-          background: #ffffff;
+          background: var(--bg);
           min-height: 100vh;
-          padding: 32px 24px;
+          padding: 28px 20px 40px;
         }
-        .form-wrapper{
-          max-width: 900px;
-          margin: 0 auto;
-          background: #fff;
-          border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          padding: 32px;
+
+        /* แถบหัวเรื่องเต็มความกว้าง แบบสีทึบ */
+        .page-head{
+          background: var(--primary);
+          color: #fff;
+          border-radius: 14px;
+          padding: 18px 22px;
+          max-width: 1100px;
+          margin: 0 auto 18px;
+          box-shadow: 0 6px 14px rgba(37,99,235,0.15);
         }
         .page-title{
-          text-align: center;
-          font-weight: 600;
-          color: var(--g1);
-          margin-bottom: 24px;
+          margin: 0;
+          font-weight: 700;
+          letter-spacing: .2px;
         }
-        .section-title{
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--g2);
-          margin-bottom: 12px;
+
+        /* การ์ดครอบฟอร์ม + กริดใหม่ 2 คอลัมน์ไม่เท่ากัน */
+        .form-wrapper{
+          max-width: 1100px;
+          margin: 0 auto;
+          background: var(--card);
+          border: 1px solid var(--line);
+          border-radius: 16px;
+          box-shadow: 0 6px 20px rgba(15,23,42,0.06);
+          padding: 22px;
         }
         .form-grid{
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1.2fr 1fr;  /* ปรับสัดส่วนซ้ายกว้างกว่า */
           gap: 20px;
+          align-items: start;
         }
-        @media(max-width:768px){
-          .form-grid{ grid-template-columns:1fr; }
+        @media(max-width: 900px){
+          .form-grid{ grid-template-columns: 1fr; }
         }
+
+        /* การ์ดเซคชันซ้าย/ขวา พร้อมแถบสีบน */
+        .panel{
+          background: #fff;
+          border: 1px solid var(--line);
+          border-radius: 14px;
+          padding: 18px;
+          position: relative;
+        }
+        .panel:before{
+          content: "";
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%;
+          height: 6px;
+          border-radius: 14px 14px 0 0;
+          background: var(--secondary);
+        }
+        .panel--left:before{ background: var(--primary); }
+        .panel--right:before{ background: var(--secondary); }
+
+        .section-title{
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: var(--ink);
+          margin: 4px 0 14px;
+          padding-left: 10px;
+          border-left: 4px solid var(--warning);
+        }
+
+        /* สไตล์คอมโพเนนต์ของ antd ให้เข้าธีม */
+        .ant-form-item-label > label{
+          color: var(--muted);
+          font-weight: 600 !important;
+        }
+        .ant-input-affix-wrapper, .ant-input, .ant-input-number{
+          border-radius: 10px !important;
+        }
+        .ant-input-affix-wrapper:hover, .ant-input:hover, .ant-input-number:hover{
+          border-color: var(--primary) !important;
+        }
+        .ant-input:focus, .ant-input-focused,
+        .ant-input-affix-wrapper-focused,
+        .ant-input-number-focused{
+          box-shadow: 0 0 0 3px rgba(37,99,235,0.12) !important;
+          border-color: var(--primary) !important;
+        }
+
+        /* แถบแอคชันล่าง ชิดขวา */
+        .actions{
+          display: flex;
+          justify-content: flex-end;
+          gap: 10px;
+          margin-top: 8px;
+        }
+
         .btn-save{
-          background: linear-gradient(90deg,var(--g1),var(--g2),var(--g3));
+          background: var(--primary) !important; /* สีทึบ */
+          border: none !important;
+          border-radius: 10px !important;
+          color: #fff !important;
+          font-weight: 700 !important;
+          padding: 10px 18px !important;
+          box-shadow: 0 6px 12px rgba(37,99,235,0.18);
+        }
+        .btn-save:hover{
+          filter: brightness(0.95);
+        }
+
+        /* โมดัล */
+        .modal-icon{
+          color: var(--success);
+          font-size: 64px;
+        }
+        .modal-confirm-btn{
+          background: var(--success);
           border: none;
           border-radius: 8px;
-          color: white;
-          font-weight: 600;
-          padding: 10px 20px;
-          margin-top: 24px;
+          padding: 8px 16px;
+          color: #fff;
+          font-weight: 700;
         }
-        .modal-icon{
-          color: #16a34a;
-          font-size: 64px;
+        .modal-confirm-btn:hover{
+          filter: brightness(0.95);
+        }
+
+        /* รายละเอียดเล็กน้อย */
+        .hint{
+          font-size: 12px;
+          color: var(--muted);
+          background: var(--soft);
+          padding: 8px 10px;
+          border-radius: 10px;
+          border: 1px dashed #c7d2fe;
+          margin-bottom: 8px;
         }
       `}</style>
 
       <div className="page-container">
-        <h2 className="page-title">เพิ่มข้อมูลลูกค้า</h2>
+        {/* แถบหัวเรื่องสีทึบ */}
+        <div className="page-head">
+          <h2 className="page-title">เพิ่มข้อมูลลูกค้า</h2>
+        </div>
+
         <div className="form-wrapper">
           <Form
             form={form}
@@ -96,9 +198,14 @@ export default function CreateCustomerForm() {
             autoComplete="off"
             onFinish={onPost}
           >
+            {/* กริดจัดวางใหม่: ซ้าย (ข้อมูลส่วนตัว) / ขวา (การติดต่อ & ที่อยู่) */}
             <div className="form-grid">
-              <div>
+              <div className="panel panel--left">
                 <div className="section-title">ข้อมูลส่วนตัว</div>
+                <div className="hint">
+                  กรุณากรอกข้อมูลตามจริงเพื่อความถูกต้องของงานบริการ
+                </div>
+
                 <Form.Item
                   name="customerRef"
                   label="รหัสลูกค้า"
@@ -106,6 +213,7 @@ export default function CreateCustomerForm() {
                 >
                   <Input prefix={<LiaUserEditSolid />} />
                 </Form.Item>
+
                 <Form.Item
                   name="customer_firstname"
                   label="ชื่อ"
@@ -113,6 +221,7 @@ export default function CreateCustomerForm() {
                 >
                   <Input prefix={<LiaUserEditSolid />} />
                 </Form.Item>
+
                 <Form.Item
                   name="customer_lastname"
                   label="นามสกุล"
@@ -120,6 +229,7 @@ export default function CreateCustomerForm() {
                 >
                   <Input prefix={<LiaUserEditSolid />} />
                 </Form.Item>
+
                 <Form.Item
                   name="username"
                   label="Username"
@@ -127,6 +237,7 @@ export default function CreateCustomerForm() {
                 >
                   <Input prefix={<LiaUserEditSolid />} />
                 </Form.Item>
+
                 <Form.Item
                   name="customer_old"
                   label="อายุ"
@@ -136,8 +247,9 @@ export default function CreateCustomerForm() {
                 </Form.Item>
               </div>
 
-              <div>
+              <div className="panel panel--right">
                 <div className="section-title">การติดต่อ & ที่อยู่</div>
+
                 <Form.Item
                   name="email"
                   label="Email"
@@ -145,6 +257,7 @@ export default function CreateCustomerForm() {
                 >
                   <Input prefix={<MdOutlineEmail />} />
                 </Form.Item>
+
                 <Form.Item
                   name="line_id"
                   label="Line id"
@@ -152,6 +265,7 @@ export default function CreateCustomerForm() {
                 >
                   <Input prefix={<FaLine />} />
                 </Form.Item>
+
                 <Form.Item
                   name="phone"
                   label="เบอร์โทรศัพท์"
@@ -159,6 +273,7 @@ export default function CreateCustomerForm() {
                 >
                   <Input prefix={<FiPhoneCall />} />
                 </Form.Item>
+
                 <Form.Item
                   name="address"
                   label="ที่อยู่ลูกค้า"
@@ -169,7 +284,8 @@ export default function CreateCustomerForm() {
               </div>
             </div>
 
-            <div className="d-flex justify-content-center">
+            {/* ปุ่มบันทึกชิดขวา (logic เดิม) */}
+            <div className="actions">
               <Button
                 className="btn-save d-flex align-items-center"
                 onClick={() => {
@@ -185,22 +301,12 @@ export default function CreateCustomerForm() {
           </Form>
         </div>
 
+        {/* Modal เดิม เปลี่ยนเป็นสีทึบ ไม่มีไล่สี */}
         <Modal show={open} onHide={handleClose}>
           <Modal.Body className="text-center">
             <IoMdCheckmarkCircle className="modal-icon" />
             <p className="mt-3 mb-3">การเพิ่มรายชื่อลูกค้าเข้าในระบบสำเร็จ</p>
-            <Button
-              onClick={handleCreateJob}
-              style={{
-                background:
-                  "linear-gradient(90deg,var(--g1),var(--g2),var(--g3))",
-                border: "none",
-                borderRadius: "6px",
-                padding: "8px 16px",
-                color: "white",
-                fontWeight: "600",
-              }}
-            >
+            <Button onClick={handleCreateJob} className="modal-confirm-btn">
               สร้างงาน
             </Button>
           </Modal.Body>
@@ -210,6 +316,7 @@ export default function CreateCustomerForm() {
   );
 }
 
+// test13.js
 // import React, { useState } from "react";
 // import { Form, Input, InputNumber } from "antd";
 // import Button from "react-bootstrap/Button";
@@ -223,186 +330,194 @@ export default function CreateCustomerForm() {
 // import { FaLine } from "react-icons/fa6";
 // import { FiPhoneCall } from "react-icons/fi";
 // import { MdOutlineDescription } from "react-icons/md";
-// // import { Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
 
 // export default function CreateCustomerForm() {
-//   // const [data, setData] = useState([]);
 //   const [form] = Form.useForm();
 //   const [open, setOpen] = useState(false);
-//   const [customerData, setCustomerData] = useState("");
-
 //   const navigate = useNavigate();
-//   const handleCreateJob = () => {
-//     navigate("/create-job");
-//   };
 
-//   const handleClose = () => {
-//     setOpen(false);
-//   };
-
-//   // const handleOpen = () => {
-//   //   setOpen(true);
-//   // };
+//   const handleCreateJob = () => navigate("/create-job");
+//   const handleClose = () => setOpen(false);
 
 //   const onPost = (data) => {
-//     console.log(data);
 //     const url = "http://localhost:3302/create-customers";
 //     axios
 //       .post(url, data)
-//       .then((response) => {
-//         // setData(response.data);
-//         console.log("Customer created successfully:", response.data);
-//         form.resetFields();
-//       })
-
-//       .catch((error) => {
-//         console.error("Error creating customer:", error);
-//       });
+//       .then(() => form.resetFields())
+//       .catch((error) => console.error("Error creating customer:", error));
 //   };
 
 //   return (
-//     <div className="contain-main">
-//       <h2 className="text-dark mb-4 mt-5 text-center">เพิ่มข้อมูลลูกค้า</h2>
-//       <div className="d-flex flex-column mt-5">
-//         <Form
-//           form={form}
-//           layout="vertical"
-//           autoComplete="off"
-//           onFinish={onPost}
-//           className="content-sub-form-body"
-//         >
-//           <Form.Item
-//             name="customerRef"
-//             label="รหัสลูกค้า"
-//             rules={[{ required: true }, { type: "string" }]}
-//             className="form-item-custom-size"
-//           >
-//             <Input prefix={<LiaUserEditSolid />} />
-//           </Form.Item>
+//     <>
+//       {/* Gradient เฉพาะ "การ์ดหัวข้อ" (ไม่ใช้สีน้ำเงิน) + ปรับโทน focus ของ antd ให้ไม่เป็นฟ้า */}
+//       <style>{`
+//         .header-gradient-card{
+//           background: linear-gradient(90deg,#0D92CF9C,#C7FEE7FFc7,#8AB8FDFF); /* เขียวอ่อน -> เหลืองอ่อน */
+//           border: 1px solid #e5e7eb;
+//         }
 
-//           <Form.Item
-//             name="customer_firstname"
-//             label="ชื่อ"
-//             rules={[{ required: true }, { type: "string" }]}
-//             className="form-item-custom-size"
-//           >
-//             <Input prefix={<LiaUserEditSolid />} />
-//           </Form.Item>
+//       `}</style>
 
-//           <Form.Item
-//             name="customer_lastname"
-//             label="นามสกุล"
-//             rules={[{ required: true }, { type: "string" }]}
-//             className="form-item-custom-size"
-//           >
-//             <Input prefix={<LiaUserEditSolid />} value={customerData} />
-//           </Form.Item>
-
-//           <Form.Item
-//             name="username"
-//             label="Username"
-//             rules={[{ required: true }, { type: "string" }]}
-//             className="form-item-custom-size"
-//           >
-//             <Input prefix={<LiaUserEditSolid />} />
-//           </Form.Item>
-
-//           <Form.Item
-//             name="customer_old"
-//             label="อายุ"
-//             rules={[{ required: true }, { type: "number" }]}
-//             className="form-item-custom-size"
-//           >
-//             <InputNumber
-//               prefix={<LiaUserEditSolid />}
-//               min={1}
-//               max={100}
-//               className="form-item-custom-size"
-//             />
-//           </Form.Item>
-
-//           <Form.Item
-//             name="email"
-//             label="Email"
-//             rules={[{ required: true }, { type: "string" }]}
-//             className="form-item-custom-size"
-//           >
-//             <Input prefix={<MdOutlineEmail />} />
-//           </Form.Item>
-
-//           {/* <Form.Item
-//             name="serial_number"
-//             label="Serial Number"
-//             rules={[{ required: true }, { type: "string" }]}
-//             className="form-item-custom-size"
-//           >
-//             <Input prefix={<MdOutlineEmail />} />
-//           </Form.Item> */}
-
-//           <Form.Item
-//             name="line_id"
-//             label="Line id"
-//             rules={[{ required: true }, { type: "string" }]}
-//             className="form-item-custom-size"
-//           >
-//             <Input prefix={<FaLine />} />
-//           </Form.Item>
-
-//           <Form.Item
-//             name="phone"
-//             label="เบอร์โทรศัพท์"
-//             rules={[{ required: true }, { type: "string" }]}
-//             className="form-item-custom-size"
-//           >
-//             <Input prefix={<FiPhoneCall />} />
-//           </Form.Item>
-
-//           <Form.Item
-//             name="address"
-//             label="ที่อยู่ลูกค้า"
-//             rules={[{ required: true }, { type: "string" }]}
-//           >
-//             <Input.TextArea
-//               prefix={<MdOutlineDescription />}
-//               className="form-item-custom-size-address"
-//             />
-//           </Form.Item>
-//         </Form>
-
-//         <div className="d-flex justify-content-center mt-5 mb-5">
-//           <Button
-//             className="d-flex align-items-center justify-content-between btn-save margin-top-100"
-//             onClick={() => {
-//               setOpen(true);
-//               form.submit();
-//             }}
-//             htmlType="submit"
-//           >
-//             <FaRegSave className="button-icon justify-content-start" />
-//             <span className="button-text">บันทึกข้อมูลลูกค้า</span>
-//           </Button>
-//           <Modal show={open} onHide={handleClose}>
-//             <Modal.Body
-//               style={{
-//                 display: "flex",
-//                 alignItems: "center",
-//                 flexDirection: "column",
-//               }}
-//             >
-//               <IoMdCheckmarkCircle className="modal-icon" />
-//               <p className="d-flex mt-3 mb-3">
-//                 การเพิ่มรายชื่อลูกค้าเข้าในระบบสำเร็จ
-//               </p>
-//               <Button
-//                 onClick={handleCreateJob}
-//                 className="d-flex align-items-center justify-content-center btn-modal margin-top-100"
-//               >
-//                 <span className="d-flex justify-content-end">สร้างงาน</span>
-//               </Button>
-//             </Modal.Body>
-//           </Modal>
+//       <div className="container-fluid bg-light min-vh-100 py-4">
+//         {/* การ์ดหัวข้อ: ไล่สี (ไม่ใช่สีน้ำเงิน) + ตัวหนังสือสีปกติ */}
+//         <div className="container mb-3">
+//           <div className="header-gradient-card rounded-3 shadow-sm p-3 p-md-4">
+//             <h2 className="fw-bold m-0 text-white justify-content-center d-flex">
+//               เพิ่มข้อมูลลูกค้า
+//             </h2>
+//           </div>
 //         </div>
+
+//         {/* การ์ดครอบฟอร์ม */}
+//         <div className="container">
+//           <div className="card rounded-4 shadow-sm border">
+//             <div className="card-body p-3 p-md-4">
+//               <Form
+//                 form={form}
+//                 layout="vertical"
+//                 autoComplete="off"
+//                 onFinish={onPost}
+//               >
+//                 {/* แบ่ง grid ซ้าย-ขวาเท่ากัน */}
+//                 <div className="row g-3 g-md-4">
+//                   {/* ซ้าย: ข้อมูลส่วนตัว */}
+//                   <div className="col-md-6">
+//                     <div className="card border-0">
+//                       <div className="card-body p-0">
+//                         <h6 className="fw-bold text-dark mb-3 border-start border-4 border-warning ps-2">
+//                           ข้อมูลส่วนตัว
+//                         </h6>
+//                         <div className="small text-muted bg-light border rounded p-2 mb-3">
+//                           กรอกข้อมูลตามจริงเพื่อความถูกต้องของงานบริการ
+//                         </div>
+
+//                         <Form.Item
+//                           name="customerRef"
+//                           label="รหัสลูกค้า"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Input prefix={<LiaUserEditSolid />} />
+//                         </Form.Item>
+
+//                         <Form.Item
+//                           name="customer_firstname"
+//                           label="ชื่อ"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Input prefix={<LiaUserEditSolid />} />
+//                         </Form.Item>
+
+//                         <Form.Item
+//                           name="customer_lastname"
+//                           label="นามสกุล"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Input prefix={<LiaUserEditSolid />} />
+//                         </Form.Item>
+
+//                         <Form.Item
+//                           name="username"
+//                           label="Username"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Input prefix={<LiaUserEditSolid />} />
+//                         </Form.Item>
+
+//                         <Form.Item
+//                           name="customer_old"
+//                           label="อายุ"
+//                           rules={[{ required: true }, { type: "number" }]}
+//                         >
+//                           <InputNumber min={1} max={100} className="w-100" />
+//                         </Form.Item>
+//                       </div>
+//                     </div>
+//                   </div>
+
+//                   {/* ขวา: การติดต่อ & ที่อยู่ */}
+//                   <div className="col-md-6">
+//                     <div className="card border-0">
+//                       <div className="card-body p-0">
+//                         <h6 className="fw-bold text-dark mb-3 border-start border-4 border-warning ps-2">
+//                           การติดต่อ & ที่อยู่
+//                         </h6>
+
+//                         <Form.Item
+//                           name="email"
+//                           label="Email"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Input prefix={<MdOutlineEmail />} />
+//                         </Form.Item>
+
+//                         <Form.Item
+//                           name="line_id"
+//                           label="Line id"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Input prefix={<FaLine />} />
+//                         </Form.Item>
+
+//                         <Form.Item
+//                           name="phone"
+//                           label="เบอร์โทรศัพท์"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Input prefix={<FiPhoneCall />} />
+//                         </Form.Item>
+
+//                         <Form.Item
+//                           name="address"
+//                           label="ที่อยู่ลูกค้า"
+//                           rules={[{ required: true }, { type: "string" }]}
+//                         >
+//                           <Input.TextArea
+//                             autoSize={{ minRows: 4, maxRows: 6 }}
+//                           />
+//                         </Form.Item>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 </div>
+
+//                 {/* ปุ่มบันทึก ชิดขวา */}
+//                 <div className="d-flex justify-content-end mt-3">
+//                   <Button
+//                     className="d-flex align-items-center fw-bold"
+//                     variant="success"
+//                     onClick={() => {
+//                       setOpen(true);
+//                       form.submit();
+//                     }}
+//                     htmlType="submit"
+//                   >
+//                     <FaRegSave className="me-2" />
+//                     บันทึกข้อมูลลูกค้า
+//                   </Button>
+//                 </div>
+//               </Form>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Modal เดิม */}
+//         <Modal show={open} onHide={handleClose}>
+//           <Modal.Body className="text-center">
+//             <IoMdCheckmarkCircle
+//               className="text-success"
+//               style={{ fontSize: 64 }}
+//             />
+//             <p className="mt-3 mb-3">การเพิ่มรายชื่อลูกค้าเข้าในระบบสำเร็จ</p>
+//             <Button
+//               onClick={handleCreateJob}
+//               variant="success"
+//               className="fw-bold"
+//             >
+//               สร้างงาน
+//             </Button>
+//           </Modal.Body>
+//         </Modal>
 //       </div>
-//     </div>
+//     </>
 //   );
 // }
