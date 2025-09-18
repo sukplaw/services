@@ -8,12 +8,17 @@ import { FaArrowAltCircleLeft, FaArrowAltCircleRight } from "react-icons/fa";
 const Sidebar = ({ onCollapse }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const handleToggle = () => {
     const newCollapse = !isCollapsed;
     setIsCollapsed(newCollapse);
     onCollapse(newCollapse);
   };
+
+  // ✅ Get user role from storage (local or session)
+  const role = localStorage.getItem("permission") || sessionStorage.getItem("permission");
+  console.log(role);
 
   const menuItems = [
     {
@@ -31,23 +36,26 @@ const Sidebar = ({ onCollapse }) => {
       name: "งานทั้งหมด",
       icon: <IoDocumentText className="sidebar-icon" />,
     },
-    {
-      to: "/create-job",
-      name: "เพิ่มงานซ่อม",
-      icon: <MdWork className="sidebar-icon" />,
-    },
+    ...(role !== "admin"
+      ? [
+        {
+          to: "/create-job",
+          name: "เพิ่มงานซ่อม",
+          icon: <MdWork className="sidebar-icon" />,
+        },
+      ]
+      : []),
   ];
 
   const logoutItem = { to: "/logout", name: "ออกจากระบบ", icon: <MdLogout /> };
 
   const clearAuthData = () => {
-    ["token", "permission"].forEach((key) => {
+    ["token", "permission", "role"].forEach((key) => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     });
   };
 
-  const navigate = useNavigate();
   const handleLogout = () => {
     clearAuthData();
     navigate("/");
@@ -57,11 +65,11 @@ const Sidebar = ({ onCollapse }) => {
     <>
       <style>{`
         /* ✅ เพิ่มตัวแปรสีสำหรับไล่สีวิ่ง */
-        :root{
-  --g1:#312e81; /* indigo-900 */
-  --g2:#0e7490; /* cyan-700 */
-  --g3:#166534; /* emerald-800 */
-}
+        :root {
+          --g1: #312e81;
+          --g2: #0e7490;
+          --g3: #166534;
+        }
 
         .sidebar {
           display: flex;
@@ -90,9 +98,9 @@ const Sidebar = ({ onCollapse }) => {
 
         /* ⏱ keyframes ขยับไล่สี */
         @keyframes sidebarGradient{
-          0%{ background-position: 0% 50%; }
-          50%{ background-position: 100% 50%; }
-          100%{ background-position: 0% 50%; }
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
         }
 
         .sidebar.collapsed { width: 70px; }
@@ -142,6 +150,7 @@ const Sidebar = ({ onCollapse }) => {
         //   background-color: #f1f3f5;
         //   color: #000;
         // }
+        .nav-link.active .sidebar-icon { color: #ffffff; }
         
 
         .sidebar-icon {
@@ -202,9 +211,8 @@ const Sidebar = ({ onCollapse }) => {
               <li className="nav-item" key={item.to}>
                 <Link
                   to={item.to}
-                  className={`nav-link ${
-                    location.pathname === item.to ? "active" : ""
-                  }`}
+                  className={`nav-link ${location.pathname === item.to ? "active" : ""
+                    }`}
                 >
                   <div className="sidebar-icon">{item.icon}</div>
                   <span className="sidebar-text">{item.name}</span>

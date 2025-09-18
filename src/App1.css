@@ -4,6 +4,12 @@ body {
   font-family: 'Kanit', sans-serif !important;
 }
 
+.content-scroll-area {
+  flex-grow: 1;          /* ทำให้ div นี้ขยายเต็มพื้นที่ที่เหลือในแนวตั้ง */
+  overflow-y: auto;      /* !! หัวใจหลัก: ทำให้ scroll ได้เฉพาะใน div นี้ !! */
+  padding: 1rem;         /* (แนะนำ) เพิ่มระยะห่างรอบๆ เนื้อหา */
+}
+
 .custom-active {
   background-color: #f7b731 !important;
 }

@@ -1,4 +1,3 @@
-// test10.js (Backlogs) — ใช้ดีไซน์จาก test11, คง logic/test10 เดิม
 import React, { useState, useEffect } from "react";
 import { Table, Input, Form } from "antd";
 import axios from "axios";
@@ -75,12 +74,12 @@ export default function Backlogs() {
       "serialNumber",
       "sku",
       "username",
-      "createdBy",
+      "serviceRef",
       "jobStatus",
       "createAt",
       "remainingTime",
       "updateAt",
-      "updatedBy",
+      "updateBy",
     ];
     const matchesSearch = searchableFields.some((field) => {
       const fieldValue = item[field];
@@ -192,7 +191,7 @@ export default function Backlogs() {
       dataIndex: "serialNumber",
       key: "serialNumber",
       align: "center",
-      responsive: ["lg"],
+      responsive: ["xl"], // ✅ แก้ไข: แสดงเฉพาะจอกว้างพิเศษ
       className: "align-middle text-muted",
     },
     {
@@ -200,7 +199,7 @@ export default function Backlogs() {
       dataIndex: "sku",
       key: "sku",
       align: "center",
-      responsive: ["md"],
+      responsive: ["lg"], // ✅ แก้ไข: แสดงเฉพาะจอใหญ่ขึ้นไป
       className: "align-middle",
     },
     {
@@ -216,7 +215,7 @@ export default function Backlogs() {
       dataIndex: "serviceRef",
       key: "serviceRef",
       align: "center",
-      responsive: ["md"],
+      responsive: ["lg"], // ✅ แก้ไข: แสดงเฉพาะจอใหญ่ขึ้นไป
       className: "align-middle",
     },
     {
@@ -270,7 +269,7 @@ export default function Backlogs() {
         );
         // Progress pretty สไตล์เดียวกับ test11
         return (
-          <div style={{ minWidth: 240 }}>
+          <div style={{ minWidth: 180 }}> {/* ✅ แก้ไข: ลดความกว้างลง */}
             <div className="progress pretty" title={labelText}>
               <div
                 className={`progress-bar ${colorClass}`}
@@ -298,19 +297,19 @@ export default function Backlogs() {
     },
     {
       title: "วันที่แก้ไขสถานะล่าสุด",
-      dataIndex: "updateAt",
-      key: "updateAt",
+      dataIndex: "latestUpdateAt",
+      key: "latestUpdateAt",
       align: "center",
       render: (date) => new Date(date).toLocaleDateString("th-TH"),
-      responsive: ["md"],
+      responsive: ["xl"], // ✅ แก้ไข: แสดงเฉพาะจอกว้างพิเศษ
       className: "align-middle",
     },
     {
       title: "ผู้แก้ไขสถานะล่าสุด",
-      dataIndex: "updateBy",
-      key: "updateBy",
+      dataIndex: "latestUpdateBy",
+      key: "latestUpdateBy",
       align: "center",
-      responsive: ["md"],
+      responsive: ["xl"], // ✅ แก้ไข: แสดงเฉพาะจอกว้างพิเศษ
       className: "align-middle",
     },
     mobileOnlyColumn,

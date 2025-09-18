@@ -6,16 +6,7 @@
   --glass-strong: rgba(255,255,255,.18);
 }
 
-.new-navbar{
-  background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
-  background-size: 200% 200%;
-  animation: gradientMove 12s ease infinite;
-  border-bottom: none !important;
-  position: sticky;
-  top: 0;
-  z-index: 1030;
-  box-shadow: 0 8px 24px rgba(0,0,0,.18);
-}
+
 
 @keyframes gradientMove {
   0%{background-position:0% 50%}
@@ -29,6 +20,21 @@
   width:32px; height:32px; border-radius:10px;
   background: rgba(255,255,255,.9); color:#111; font-weight:800;
   box-shadow: 0 6px 16px rgba(0,0,0,.2);
+}
+
+.new-navbar {
+  /* ... โค้ดเดิม ... */
+  background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
+  background-size: 200% 200%;
+  animation: gradientMove 12s ease infinite;
+  border-bottom: none !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+
+  /* --- โค้ดที่แก้ไข/เพิ่มเติม --- */
+  position: sticky;
+  top: 0;
+  z-index: 999; /* z-index ต้องน้อยกว่า Sidebar แต่มากกว่าเนื้อหา */
+  flex-shrink: 0; /* ป้องกันไม่ให้ Navbar หดตัว */
 }
 
 /* Toggler */

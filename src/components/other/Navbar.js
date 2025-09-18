@@ -9,69 +9,60 @@ import { Badge } from "antd";
 
 export default function Navbar() {
   const [selectedDate, setSelectedDate] = useState(dayjs());
-  const [serviceRef, setserviceRef] = useState("");
+  const [serviceRef, setServiceRef] = useState("");
   const [role, setRole] = useState("");
   const [user, setUser] = useState("");
   const [loading, setLoading] = useState(false);
+  const [warningCount, setWarningCount] = useState(0);
+  const [imageUrl, setImageUrl] = useState(""); // <-- เพิ่มบรรทัดนี้
   const navigate = useNavigate();
 
-  // สมมุติ warningCount เป็น 0 เพื่อแทนที่ WarningContext
-  const warningCount = 0;
-
   useEffect(() => {
-    const getData = async () => {
-      setLoading(true);
+    const fetchData = async () => {
       try {
         const token =
           localStorage.getItem("token") || sessionStorage.getItem("token");
-        if (!token) {
-          console.error("No token found in localStorage.");
-          setLoading(false);
-          return;
-        }
 
-        const res = await axios.get("http://localhost:5000/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        if (!token) return;
+
+        // ดึง profile
+        const profileRes = await axios.get("http://localhost:5000/profile", {
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        const userFromApi = res.data.user;
+        const userFromApi = profileRes.data.user;
         setRole(userFromApi.role || "Guest");
-        setUser(() => ({
-          serviceRef: userFromApi.serviceRef,
-        }));
-        console.log(user);
-        console.log(role);
-        console.log(userFromApi);
-      } catch (error) {
-        if (error.response && error.response.status === 403) {
-          console.error("Token is invalid or expired.");
-        } else {
-          console.error("Failed to fetch user data from API:", error);
-        }
-      } finally {
-        setLoading(false);
+        setServiceRef(userFromApi.serviceRef || "Guest");
+        setImageUrl(userFromApi.service_image || ""); // <-- เพิ่มบรรทัดนี้
+
+        // ดึงงานทั้งหมดจาก /get-job
+        const jobRes = await axios.get("http://localhost:3302/get-job");
+
+        const jobs = jobRes.data || [];
+
+        // กรองเฉพาะงานที่:
+        // 1. expected_completion_date < วันนี้
+        // 2. jobStatus != "เสร็จ" และ != "completed"
+        const overdueJobs = jobs.filter((job) => {
+          const dueDate = dayjs(job.expected_completion_date);
+          const isOverdue = dueDate.isBefore(dayjs(), "day");
+          const isIncomplete =
+            job.jobStatus !== "เสร็จ" && job.jobStatus !== "completed";
+
+          return isOverdue && isIncomplete;
+        });
+
+        // ตั้งค่าแจ้งเตือน
+        setWarningCount(overdueJobs.length);
+      } catch (err) {
+        console.error("Error loading data:", err);
       }
     };
-    getData();
-
-    // const storedUser = localStorage.getItem("user");
-    // if (storedUser) {
-    //   try {
-    //     const user = JSON.parse(storedUser);
-    //     setserviceRef(user.serviceRef || user.name || user.email || "Guest");
-    //     setRole(user.role || "Guest");
-    //     console.log("User role from localStorage:", user.role);
-    //   } catch (error) {
-    //     console.error("Failed to parse user data from localStorage", error);
-    //     setserviceRef("Guest");
-    //     setRole("Guest");
-    //   }
-    // }
+    fetchData();
   }, []);
 
-  const handleWarningClick = () => navigate("/Home");
+  const handleWarningClick = () => navigate("/incomplete-job");
+  const toRegister = () => navigate("/register");
 
   return (
     <nav className="navbar navbar-expand-lg new-navbar px-3 px-lg-4">
@@ -93,9 +84,8 @@ export default function Navbar() {
             {/* Notification */}
             <li className="nav-item">
               <button
-                className={`icon-pill ${
-                  warningCount > 0 ? "pill-danger pulse" : "pill-muted"
-                }`}
+                className={`icon-pill ${warningCount > 0 ? "pill-danger pulse" : "pill-muted"
+                  }`}
                 onClick={warningCount > 0 ? handleWarningClick : undefined}
                 title={
                   warningCount > 0 ? "ดูการแจ้งเตือน" : "ไม่มีการแจ้งเตือน"
@@ -103,9 +93,9 @@ export default function Navbar() {
               >
                 <Badge count={warningCount} overflowCount={99}>
                   {warningCount > 0 ? (
-                    <FaBell className="icon-lg" style={{ color: "white" }} />
+                    <FaBell className="icon-lg" style={{ color: "red" }} />
                   ) : (
-                    <FaRegBell className="icon-lg" />
+                    <FaRegBell className="icon-lg" style={{ color: "white" }} />
                   )}
                 </Badge>
               </button>
@@ -139,14 +129,24 @@ export default function Navbar() {
                 aria-expanded="false"
               >
                 <div className="avatar-gradient me-2">
-                  {(
-                    localStorage.getItem("serviceRef") ||
-                    sessionStorage.getItem("serviceRef") ||
-                    serviceRef ||
-                    "U"
-                  )
-                    .charAt(0)
-                    .toUpperCase()}
+                  {imageUrl ? (
+                    // ถ้ามี imageUrl ให้แสดงรูปภาพ
+                    <img
+                      src={imageUrl}
+                      alt="Profile"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                    />
+                  ) : (
+                    // ถ้าไม่มี imageUrl ให้แสดงตัวอักษรเหมือนเดิม
+                    (
+                      localStorage.getItem("serviceRef") ||
+                      sessionStorage.getItem("serviceRef") ||
+                      serviceRef ||
+                      "U"
+                    )
+                      .charAt(0)
+                      .toUpperCase()
+                  )}
                 </div>
                 <span className="d-none d-lg-inline text-white-50">Menu</span>
               </a>
@@ -161,16 +161,16 @@ export default function Navbar() {
                 </li>
                 {role === "super service" && (
                   <li>
-                    <a className="dropdown-item" href="#">
+                    <a className="dropdown-item" href="#" onClick={toRegister}>
                       Register Service
                     </a>
                   </li>
                 )}
-                <li>
+                {/* <li>
                   <a className="dropdown-item" href="#">
                     Settings
                   </a>
-                </li>
+                </li> */}
               </ul>
             </li>
           </ul>

@@ -32,7 +32,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      {/* <Route path="/register" element={<Register />} /> */}
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route
         path="/*"

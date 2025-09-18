@@ -13,7 +13,8 @@ const DEFAULT_USER = {
   lineId: "",
   phone: "",
   role: "",
-  avatar: "", // base64 dataURL
+  age: "",
+  serviceImage: "", // base64 dataURL
 };
 
 export default function Profile() {
@@ -21,6 +22,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  // const [imageFile, setImageFile] = useState(null);
 
   // ฟังก์ชันสำหรับดึงข้อมูลผู้ใช้จาก API
   const getData = async () => {
@@ -49,16 +51,17 @@ export default function Profile() {
 
       setUser((prev) => ({
         ...prev,
-        firstName: userFromApi.firstName || prev.firstName,
-        lastName: userFromApi.lastName || prev.lastName,
+        firstName: userFromApi.service_firstname || prev.service_firstname,
+        lastName: userFromApi.service_lastname || prev.service_lastname,
         email: userFromApi.email || prev.email,
         username: userFromApi.username || prev.username,
         serviceID: userFromApi.serviceRef || prev.serviceRef,
-        lineId: userFromApi.lineId || prev.lineId,
+        lineId: userFromApi.line_id || prev.line_id,
         phone: userFromApi.phone || prev.phone,
         role: userFromApi.role || prev.role,
-        birthDate: userFromApi.birthDate || prev.birthDate,
-        avatar: userFromApi.avatar || prev.avatar,
+        birthDate: userFromApi.birth_date || prev.birth_date,
+        age: userFromApi.service_old || prev.service_old,
+        serviceImage: userFromApi.service_image || prev.service_image,
       }));
     } catch (error) {
       // ตรวจสอบกรณีที่เกิดข้อผิดพลาด
@@ -89,39 +92,109 @@ export default function Profile() {
     setUser((u) => ({ ...u, [key]: val }));
   };
 
-  const onPickAvatar = (file) => {
+  // นำโค้ดนี้ไปแทนที่ onPickImage เดิม
+  const onPickImage = async (file) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      onChange("avatar", reader.result);
-    };
-    reader.readAsDataURL(file);
+
+    // 1. สร้าง FormData สำหรับส่งไฟล์
+    const formData = new FormData();
+    formData.append("imageFile", file); // "imageFile" ต้องตรงกับที่ multer กำหนด
+
+    setLoading(true); // เริ่มสถานะโหลด (หมุนๆ)
+
+    try {
+      // 2. ส่งไฟล์ไปที่เซิร์ฟเวอร์ multer ทันที
+      console.log("กำลังอัปโหลดรูปภาพไปที่ port 3303...");
+      const uploadRes = await axios.post(
+        "http://localhost:3303/upload",
+        formData
+      );
+
+      // 3. เมื่อสำเร็จ, นำ URL ที่ได้มาอัปเดต state
+      if (uploadRes.data.url) {
+        const newImageUrl = uploadRes.data.url;
+        console.log("อัปโหลดสำเร็จ, URL ใหม่:", newImageUrl);
+        onChange("serviceImage", newImageUrl); // อัปเดต state และรูป preview
+      }
+    } catch (error) {
+      console.error("เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ:", error);
+      alert("ไม่สามารถอัปโหลดรูปภาพได้");
+    } finally {
+      setLoading(false); // สิ้นสุดสถานะโหลด
+    }
   };
 
+  // const onSave = async () => {
+  //   const token =
+  //     localStorage.getItem("token") || sessionStorage.getItem("token");
+  //   if (!token) {
+  //     console.error("No token found in localStorage.");
+  //     return;
+  //   }
+
+  //   // คำนวณอายุก่อนส่ง
+  //   const birthDate = user.birthDate;
+  //   const age = birthDate && dayjs(birthDate).isValid()
+  //     ? dayjs().diff(dayjs(birthDate), "year")
+  //     : null;
+
+
+  //   const dataToSend = {
+  //     ...user,
+  //     age, // เพิ่มอายุที่คำนวณไว้ลงไป
+  //   };
+
+  //   try {
+  //     const res = await axios.put("http://localhost:5000/profile", dataToSend, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+
+  //     if (res.status === 200) {
+  //       setSaved(true);
+  //       setTimeout(() => setSaved(false), 2000);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving user data:", error);
+  //   } finally {
+  //     setIsEditing(false);
+  //   }
+  // };
+
+  // แก้ไขฟังก์ชัน onSave ในไฟล์ Profile.js ของคุณ
+
+  // นำโค้ดนี้ไปแทนที่ onSave เดิม
   const onSave = async () => {
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token) {
       console.error("No token found in localStorage.");
       return;
     }
 
+    setLoading(true);
+
+    // ข้อมูลที่จะส่งคือ user state ปัจจุบัน ซึ่งมี image URL ที่อัปเดตแล้ว
+    const dataToSend = { ...user };
+
     try {
-      // ส่งคำขอ PUT ไปที่ backend พร้อมข้อมูลที่แก้ไขแล้ว
-      const res = await axios.put("http://localhost:5000/profile", user, {
+      console.log("กำลังบันทึกข้อมูลโปรไฟล์ไปที่ port 5000...");
+      const res = await axios.put("http://localhost:5000/profile", dataToSend, {
         headers: {
-          Authorization: `Bearer ${token}`, // ส่ง token ใน header
+          Authorization: `Bearer ${token}`,
         },
       });
 
       if (res.status === 200) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
+        getData(); // เรียกข้อมูลใหม่เพื่อความแน่ใจ
       }
     } catch (error) {
-      console.error("Error saving user data:", error);
+      console.error("Error saving user profile data:", error);
     } finally {
-      setIsEditing(false); // ปิดโหมดแก้ไข
+      setIsEditing(false);
+      setLoading(false);
     }
   };
 
@@ -166,14 +239,14 @@ export default function Profile() {
           border-radius: 1rem;
           box-shadow: 0 6px 18px rgba(0,0,0,.08);
         }
-        .avatar-wrap{
+        .image-wrap{
           width: 140px; height: 140px; border-radius: 999px;
           overflow: hidden; background: rgba(255,255,255,.2);
           display:flex; align-items:center; justify-content:center;
           border: 2px solid rgba(255,255,255,.35);
         }
-        .avatar-wrap img{ width:100%; height:100%; object-fit: cover; }
-        .avatar-fallback{
+        .image-wrap img{ width:100%; height:100%; object-fit: cover; }
+        .image-fallback{
           font-size: 48px; font-weight: 700; color:#fff;
         }
         .btn-gradient{
@@ -194,11 +267,11 @@ export default function Profile() {
       `}</style>
       <div className="profile-banner mb-4">
         <div className="d-flex align-items-center gap-3">
-          <div className="avatar-wrap">
-            {user.avatar ? (
-              <img src={user.avatar} alt="avatar" />
+          <div className="image-wrap">
+            {user.serviceImage ? (
+              <img src={user.serviceImage} alt="image" />
             ) : (
-              <div className="avatar-fallback">
+              <div className="image-fallback">
                 {(user.username || "U").charAt(0).toUpperCase()}
               </div>
             )}
@@ -241,11 +314,11 @@ export default function Profile() {
           <div className="card profile-card p-3">
             <h5 className="mb-3">รูปภาพผู้ใช้งาน</h5>
             <div className="d-flex flex-column align-items-center gap-3">
-              <div className="avatar-wrap" style={{ width: 180, height: 180 }}>
-                {user.avatar ? (
-                  <img src={user.avatar} alt="avatar" />
+              <div className="image-wrap" style={{ width: 180, height: 180 }}>
+                {user.serviceImage ? (
+                  <img src={user.serviceImage} alt="image" />
                 ) : (
-                  <div className="avatar-fallback">
+                  <div className="image-fallback">
                     {(user.username || "U").charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -257,7 +330,7 @@ export default function Profile() {
                   accept="image/*"
                   className="form-control"
                   disabled={!isEditing}
-                  onChange={(e) => onPickAvatar(e.target.files?.[0])}
+                  onChange={(e) => onPickImage(e.target.files?.[0])}
                 />
               </div>
             </div>
@@ -308,7 +381,7 @@ export default function Profile() {
                 <input
                   type="date"
                   className="form-control"
-                  value={user.birthDate || ""}
+                  value={user.birthDate ? dayjs(user.birthDate).format("YYYY-MM-DD") : ""}
                   disabled={!isEditing}
                   onChange={(e) => onChange("birthDate", e.target.value)}
                 />

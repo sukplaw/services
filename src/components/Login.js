@@ -190,7 +190,7 @@ export default function Login() {
               </label>
             </div>
 
-            <div className="mb-3 d-flex justify-content-end">
+            {/* <div className="mb-3 d-flex justify-content-end">
               <button
                 type="button"
                 onClick={toRegister}
@@ -199,7 +199,7 @@ export default function Login() {
               >
                 Register
               </button>
-            </div>
+            </div> */}
 
             {error && (
               <div className="text-danger mb-3" style={{ fontWeight: "500" }}>
