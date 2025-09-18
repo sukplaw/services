@@ -16,6 +16,7 @@ export default function Navbar() {
   const [warningCount, setWarningCount] = useState(0);
   const [imageUrl, setImageUrl] = useState(""); // <-- เพิ่มบรรทัดนี้
   const navigate = useNavigate();
+  const [overdueCount, setOverdueCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,20 +41,53 @@ export default function Navbar() {
 
         const jobs = jobRes.data || [];
 
+        const now = dayjs();
         // กรองเฉพาะงานที่:
         // 1. expected_completion_date < วันนี้
         // 2. jobStatus != "เสร็จ" และ != "completed"
         const overdueJobs = jobs.filter((job) => {
-          const dueDate = dayjs(job.expected_completion_date);
-          const isOverdue = dueDate.isBefore(dayjs(), "day");
-          const isIncomplete =
-            job.jobStatus !== "เสร็จ" && job.jobStatus !== "completed";
+          const dueDateRaw = job.expected_completion_date;
+          const statusRaw = job.jobStatus;
 
-          return isOverdue && isIncomplete;
+          console.log("🔍 Checking job:", job.job_id, dueDateRaw, statusRaw);
+
+          // ตรวจว่ามี expected_completion_date หรือไม่
+          if (!dueDateRaw) {
+            console.log(" → Skip: no expected_completion_date");
+            return false;
+          }
+
+          const dueDate = dayjs(dueDateRaw);
+          if (!dueDate.isValid()) {
+            console.log(" → Skip: invalid date:", dueDateRaw);
+            return false;
+          }
+
+          // เลือกเอาวันที่วันนี้หรือล่วงหน้า
+          const isOverdueDate = dueDate.isSameOrBefore(now, "day");
+
+          // ตรวจสถานะ “เสร็จงาน” ในหลายรูปแบบ
+          const statusNormalized = statusRaw?.trim()?.toLowerCase();
+
+          const completedStatuses = [
+            "เสร็จงาน",
+            "completed",
+            "done",
+            // เพิ่ม status ที่ระบบคุณใช้
+          ];
+
+          const isCompleted = completedStatuses.includes(statusNormalized);
+
+          console.log(" → isOverdueDate:", isOverdueDate, "isCompleted:", isCompleted);
+
+          // ถ้าเลยหรือวันนี้ และยังไม่เสร็จ
+          return isOverdueDate && !isCompleted;
         });
 
-        // ตั้งค่าแจ้งเตือน
-        setWarningCount(overdueJobs.length);
+        console.log("✅ Overdue jobs (list):", overdueJobs.map((j) => j.job_id));
+        console.log("Overdue count:", overdueJobs.length);
+
+        setOverdueCount(overdueJobs.length);
       } catch (err) {
         console.error("Error loading data:", err);
       }
@@ -84,18 +118,21 @@ export default function Navbar() {
             {/* Notification */}
             <li className="nav-item">
               <button
-                className={`icon-pill ${warningCount > 0 ? "pill-danger pulse" : "pill-muted"
-                  }`}
-                onClick={warningCount > 0 ? handleWarningClick : undefined}
+                className={`icon-pill ${
+                  overdueCount > 0 ? "pill-danger pulse" : "pill-muted"
+                }`}
+                onClick={overdueCount > 0 ? handleWarningClick : undefined}
                 title={
-                  warningCount > 0 ? "ดูการแจ้งเตือน" : "ไม่มีการแจ้งเตือน"
+                  overdueCount > 0
+                    ? `มีงานที่ครบกำหนดหรือเลยกำหนด ${overdueCount} งาน`
+                    : "ไม่มีงานที่ครบกำหนด"
                 }
               >
-                <Badge count={warningCount} overflowCount={99}>
-                  {warningCount > 0 ? (
-                    <FaBell className="icon-lg" style={{ color: "red" }} />
+                <Badge count={overdueCount} overflowCount={99}>
+                  {overdueCount > 0 ? (
+                    <FaBell className="icon-lg" style={{ color: "white" }} />
                   ) : (
-                    <FaRegBell className="icon-lg" style={{ color: "white" }} />
+                    <FaRegBell className="icon-lg" />
                   )}
                 </Badge>
               </button>

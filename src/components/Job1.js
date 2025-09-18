@@ -505,17 +505,10 @@ export default function Job() {
           <div className="col-12 col-lg-4 order-3">
             <div className="d-flex justify-content-lg-end gap-2 flex-wrap">
               <Space>
-                <Dropdown
-                  menu={{
-                    items: stepFlow
-                      .map((s) => ({ key: s, label: s }))
-                      .concat([{ key: "all", label: "ทั้งหมด" }]),
-                  }}
-                  trigger={["click"]}
-                >
+                <Dropdown menu={menuProps} trigger={["click"]}>
                   <Button className="btn-ghost btn-pill btn-icon">
                     <BiFilterAlt />
-                    เลือกสถานะ
+                    {selectedStatus || "เลือกสถานะ"}
                   </Button>
                 </Dropdown>
               </Space>

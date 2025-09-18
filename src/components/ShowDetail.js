@@ -67,7 +67,7 @@ export default function ShowDetail() {
   const [uploadedUrls, setUploadedUrls] = useState([]);
   // none | status | customer | product
   const [editMode, setEditMode] = useState("none");
-
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [changedStatus, setChangedStatus] = useState({});
 
   const [customerForm] = Form.useForm();
@@ -122,38 +122,45 @@ export default function ShowDetail() {
   };
 
   const onFinish = (values) => {
-    const jobRef = data[0]?.jobRef;
-    if (!jobRef) {
-      message.warning("ไม่พบ jobRef ที่จะอัปเดต");
-      return;
-    }
-    const jobData = {
-      remark: values.Remark,
-      images: uploadedUrls || [],
-      jobStatus: latestStatus || "",
-    };
+  if (isSubmitting) return;  // ป้องกันส่งซ้ำ
+  setIsSubmitting(true);
 
-    console.log("📤 ส่งไป backend:", {
-      jobRef,
-      body: jobData,
-    });
-    updateRemark(jobRef, jobData);
+  const jobRef = data[0]?.jobRef;
+  if (!jobRef) {
+    message.warning("ไม่พบ jobRef ที่จะอัปเดต");
+    setIsSubmitting(false);
+    return;
+  }
+
+  const jobData = {
+    remark: values.Remark,
+    images: uploadedUrls || [],
+    jobStatus: latestStatus || "",
   };
 
-  // ✅ ส่ง remark + รูปภาพ + สถานะล่าสุด
-  const updateRemark = async (jobRef, jobData) => {
-    const url = `http://localhost:3302/update-remark/${jobRef}`;
-    try {
-      const res = await axios.put(url, jobData);
-      message.success("เพิ่มหมายเหตุและรูปภาพเพิ่มเติมสำเร็จ!");
-      console.log("Job updated successfully:", res.data);
-      form.resetFields();
-      getData();
-    } catch (error) {
-      message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
-      console.error("Error updating job:", error);
-    }
-  };
+  console.log("📤 ส่งไป backend:", {
+    jobRef,
+    body: jobData,
+  });
+
+  updateRemark(jobRef, jobData);
+};
+
+const updateRemark = async (jobRef, jobData) => {
+  const url = `http://localhost:3302/update-remark/${jobRef}`;
+  try {
+    const res = await axios.put(url, jobData);
+    message.success("เพิ่มหมายเหตุและรูปภาพเพิ่มเติมสำเร็จ!");
+    console.log("Job updated successfully:", res.data);
+    form.resetFields();
+    getData();
+  } catch (error) {
+    message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
+    console.error("Error updating job:", error);
+  } finally {
+    setIsSubmitting(false);  // เปิดให้กดส่งใหม่ได้หลังจากทำงานเสร็จ
+  }
+};
 
   useEffect(() => {
     getData();

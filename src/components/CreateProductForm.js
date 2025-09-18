@@ -9,12 +9,21 @@ import { FaRegSave, FaRegPlusSquare } from "react-icons/fa";
 import { IoMdCheckmarkCircle } from "react-icons/io";
 
 const { Dragger } = Upload;
+
 export default function CreateProductForm() {
   const [form] = Form.useForm();
   const [categoryForm] = Form.useForm(); // Separate form instance for the category modal
   const [categories, setCategories] = useState([]);
-  const [openSuccessModal, setOpenSuccessModal] = useState(false);
+  const [openSuccess, setOpenSuccess] = useState(false);
+  const [openError, setOpenError] = useState(false);
+  const [openModal, setOpenModal] = useState(false);
   const [openCategoryModal, setOpenCategoryModal] = useState(false);
+
+  // New states for category add result modal
+  const [categoryResultModalVisible, setCategoryResultModalVisible] = useState(false);
+  const [categoryResultMessage, setCategoryResultMessage] = useState("");
+  const [isCategorySuccess, setIsCategorySuccess] = useState(false);
+
   const navigate = useNavigate();
 
   // Fetches categories from the server
@@ -42,14 +51,18 @@ export default function CreateProductForm() {
     axios
       .post(url, values)
       .then(() => {
-        message.success("เพิ่มประเภทสินค้าสำเร็จ!");
+        setIsCategorySuccess(true);
+        setCategoryResultMessage("เพิ่มประเภทสินค้าสำเร็จ");
+        setCategoryResultModalVisible(true);
         categoryForm.resetFields();
         setOpenCategoryModal(false);
         getCategories(); // Refresh the category list
       })
       .catch((error) => {
         console.error("Error creating category:", error);
-        message.error("เกิดข้อผิดพลาดในการเพิ่มประเภทสินค้า");
+        setIsCategorySuccess(false);
+        setCategoryResultMessage("เพิ่มประเภทสินค้าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+        setCategoryResultModalVisible(true);
       });
   };
 
@@ -73,7 +86,7 @@ export default function CreateProductForm() {
         .then(() => {
           message.success("บันทึกข้อมูลสินค้าสำเร็จ!");
           form.resetFields();
-          setOpenSuccessModal(true); // Show success modal
+          setOpenSuccess(true); // Show success modal
         })
         .catch((err) => {
           message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูลสินค้า");
@@ -119,30 +132,17 @@ export default function CreateProductForm() {
               * กรุณากรอกข้อมูลตามจริงเพื่อความถูกต้องของงานบริการ
             </div>
             <div className="card-body p-3 p-md-4">
-              <Form
-                form={form}
-                layout="vertical"
-                autoComplete="off"
-                onFinish={onFinish}
-              >
+              <Form form={form} layout="vertical" autoComplete="off" onFinish={onFinish}>
                 <div className="row g-3 g-md-4">
                   {/* Left Column: Product Details */}
                   <div className="col-12 col-md-6">
                     <h6 className="fw-bold text-dark mb-3 border-start border-4 border-warning ps-2 mb-5">
                       ข้อมูลสินค้า
                     </h6>
-                    <Form.Item
-                      name="productRef"
-                      label="รหัสสินค้า"
-                      rules={[{ required: true }]}
-                    >
+                    <Form.Item name="productRef" label="รหัสสินค้า" rules={[{ required: true }]}>
                       <Input prefix={<MdOutlineWorkOutline />} />
                     </Form.Item>
-                    <Form.Item
-                      name="product_name"
-                      label="ชื่อสินค้า"
-                      rules={[{ required: true }]}
-                    >
+                    <Form.Item name="product_name" label="ชื่อสินค้า" rules={[{ required: true }]}>
                       <Input prefix={<MdOutlineWorkOutline />} />
                     </Form.Item>
                     <Form.Item name="sku" label="SKU" rules={[{ required: true }]}>
@@ -176,11 +176,7 @@ export default function CreateProductForm() {
                     <h6 className="fw-bold text-dark mb-5 border-start border-4 border-warning ps-2">
                       ประเภทและรูปภาพ
                     </h6>
-                    <Form.Item
-                      name="brand"
-                      label="แบรนด์"
-                      rules={[{ required: true }]}
-                    >
+                    <Form.Item name="brand" label="แบรนด์" rules={[{ required: true }]}>
                       <Select placeholder="กรุณาเลือกแบรนด์ของสินค้า">
                         {categories
                           .filter((item) => item.brand)
@@ -191,11 +187,7 @@ export default function CreateProductForm() {
                           ))}
                       </Select>
                     </Form.Item>
-                    <Form.Item
-                      name="category"
-                      label="ประเภทสินค้า"
-                      rules={[{ required: true }]}
-                    >
+                    <Form.Item name="category" label="ประเภทสินค้า" rules={[{ required: true }]}>
                       <Select placeholder="กรุณาเลือกประเภทของสินค้า">
                         {categories
                           .filter((item) => item.category)
@@ -217,9 +209,7 @@ export default function CreateProductForm() {
                         <p className="ant-upload-drag-icon">
                           <MdOutlineWorkOutline />
                         </p>
-                        <p className="ant-upload-text">
-                          คลิกหรือลากไฟล์มาวางที่นี่เพื่ออัปโหลด
-                        </p>
+                        <p className="ant-upload-text">คลิกหรือลากไฟล์มาวางที่นี่เพื่ออัปโหลด</p>
                       </Dragger>
                     </Form.Item>
                   </div>
@@ -236,37 +226,79 @@ export default function CreateProductForm() {
                     เพิ่มประเภท
                   </Button>
                   <Button
-                    className="d-flex align-items-center fw-bold rounded-3 shadow-sm btn-submit-form"
-                    variant="primary"
-                    onClick={() => form.submit()}
+                    className="btn btn-primary btn-save d-flex align-items-center justify-content-between"
+                    onClick={() => {
+                      form.submit(); // ให้ onFinish จัดการเปิด modal เอง
+                    }}
                   >
-                    <FaRegSave className="me-2" />
-                    บันทึกข้อมูลสินค้า
+                    <FaRegSave className="button-icon justify-content-start" />
+                    <span className="button-text">บันทึกข้อมูลสินค้า</span>
                   </Button>
+
+                  {/* Modal success */}
+                  <Modal
+                    show={openSuccess}
+                    onHide={() => {
+                      setOpenSuccess(false);
+                    }}
+                  >
+                    <Modal.Body
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <IoMdCheckmarkCircle
+                        className="modal-icon"
+                        style={{ fontSize: 64, color: "green" }}
+                      />
+                      <p className="d-flex mt-3 mb-3">การเพิ่มสินค้าเข้าในระบบสำเร็จ</p>
+                      <Button
+                        onClick={() => setOpenSuccess(false)}
+                        className="d-flex align-items-center justify-content-center btn-modal margin-top-100"
+                      >
+                        <span className="d-flex justify-content-end">สร้างงาน</span>
+                      </Button>
+                    </Modal.Body>
+                  </Modal>
+
+                  {/* Modal error */}
+                  <Modal
+                    show={openError}
+                    onHide={() => {
+                      setOpenError(false);
+                    }}
+                  >
+                    <Modal.Body
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <IoMdCheckmarkCircle
+                        className="modal-icon"
+                        style={{ fontSize: 64, color: "red" }}
+                      />
+                      <p className="d-flex mt-3 mb-3">
+                        การเพิ่มสินค้าเข้าในระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง
+                      </p>
+                      <Button
+                        onClick={() => setOpenError(false)}
+                        className="d-flex align-items-center justify-content-center btn-modal margin-top-100"
+                        variant="warning"
+                      >
+                        <span className="d-flex justify-content-end">ลองอีกครั้ง</span>
+                      </Button>
+                    </Modal.Body>
+                  </Modal>
                 </div>
               </Form>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Success Modal */}
-      <Modal show={openSuccessModal} onHide={() => setOpenSuccessModal(false)}>
-        <Modal.Body className="text-center">
-          <IoMdCheckmarkCircle
-            className="text-success"
-            style={{ fontSize: 64 }}
-          />
-          <p className="mt-3 mb-3">การเพิ่มสินค้าเข้าในระบบสำเร็จ</p>
-          <Button
-            onClick={() => handleNavigate("/create-job")}
-            variant="success"
-            className="fw-bold"
-          >
-            สร้างงาน
-          </Button>
-        </Modal.Body>
-      </Modal>
 
       {/* Add Category Modal */}
       <Modal show={openCategoryModal} onHide={() => setOpenCategoryModal(false)}>
@@ -294,6 +326,28 @@ export default function CreateProductForm() {
             </div>
           </Form>
         </Modal.Body>
+      </Modal>
+
+      {/* Category add result Modal */}
+      <Modal
+        show={categoryResultModalVisible}
+        onHide={() => setCategoryResultModalVisible(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{isCategorySuccess ? "สำเร็จ" : "ผิดพลาด"}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>{categoryResultMessage}</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant={isCategorySuccess ? "success" : "warning"}
+            onClick={() => setCategoryResultModalVisible(false)}
+          >
+            ปิด
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );
