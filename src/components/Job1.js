@@ -29,6 +29,7 @@ export default function Job() {
   const [isEditing, setIsEditing] = useState(false);
   const [changedStatus, setChangedStatus] = useState({});
   const [open, setOpen] = useState(false);
+  const userRole = localStorage.getItem("permission") || sessionStorage.getItem("permission");
 
   const rowClassName = (record) => {
     if (
@@ -176,8 +177,8 @@ export default function Job() {
       remainingDays < 0
         ? `เลยกำหนด | ${Math.abs(remainingDays)} วัน`
         : remainingDays === 0
-        ? "ครบเวลาดำเนินการ"
-        : `${remainingDays} วัน`;
+          ? "ครบเวลาดำเนินการ"
+          : `${remainingDays} วัน`;
 
     return { percentRemaining, remainingDays, colorClass, labelText };
   };
@@ -512,33 +513,36 @@ export default function Job() {
                   </Button>
                 </Dropdown>
               </Space>
+              {userRole !== "admin" && (
+                <>
+                  <Button
+                    className="btn-gradient btn-pill btn-icon"
+                    onClick={handletoCreateJob}
+                  >
+                    <FaPlus /> สร้างงานซ่อม
+                  </Button>
 
-              <Button
-                className="btn-gradient btn-pill btn-icon"
-                onClick={handletoCreateJob}
-              >
-                <FaPlus /> สร้างงาน
-              </Button>
+                  <Button
+                    className="btn-pill btn-icon"
+                    variant={isEditing ? "outline-danger" : "outline-secondary"}
+                    onClick={handleEditStatus}
+                  >
+                    <MdEditDocument /> {isEditing ? "ยกเลิกการแก้ไข" : "แก้ไขสถานะ"}
+                  </Button>
 
-              <Button
-                className="btn-pill btn-icon"
-                variant={isEditing ? "outline-danger" : "outline-secondary"}
-                onClick={handleEditStatus}
-              >
-                <MdEditDocument /> {isEditing ? "ยกเลิกการแก้ไข" : "แก้ไขสถานะ"}
-              </Button>
-
-              {isEditing && hasChanges && (
-                <Button
-                  className="btn-pill btn-icon"
-                  variant="success"
-                  onClick={() => {
-                    handleConfirm();
-                    setOpen(true);
-                  }}
-                >
-                  <MdEditDocument /> ยืนยันการแก้ไขสถานะ
-                </Button>
+                  {isEditing && hasChanges && (
+                    <Button
+                      className="btn-pill btn-icon"
+                      variant="success"
+                      onClick={() => {
+                        handleConfirm();
+                        setOpen(true);
+                      }}
+                    >
+                      <MdEditDocument /> ยืนยันการแก้ไขสถานะ
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>

@@ -299,11 +299,7 @@ export default function Dashboard() {
     const latestAsOf = new Map();
     data.forEach((item) => {
       const upd = dayjs(item.updateAt);
-      if (
-        (dateType === "day" && upd.isSameOrBefore(selectedDate, "day")) ||
-        (dateType === "month" && upd.isSameOrBefore(selectedDate, "month")) ||
-        (dateType === "year" && upd.isSameOrBefore(selectedDate, "year"))
-      ) {
+      if (upd.isSameOrBefore(selectedDate, "day")) {
         const exist = latestAsOf.get(item.jobRef);
         if (!exist || upd.isAfter(dayjs(exist.updateAt))) {
           latestAsOf.set(item.jobRef, item);
@@ -379,15 +375,15 @@ export default function Dashboard() {
               dateType === "day"
                 ? "DD MMM YYYY"
                 : dateType === "month"
-                  ? "MMM YYYY"
-                  : "YYYY"
+                ? "MMM YYYY"
+                : "YYYY"
             }
             placeholder={
               dateType === "day"
                 ? "เลือกวันที่"
                 : dateType === "month"
-                  ? "เลือกเดือน"
-                  : "เลือกปี"
+                ? "เลือกเดือน"
+                : "เลือกปี"
             }
             style={{ minWidth: 160 }}
           />
@@ -694,7 +690,7 @@ export default function Dashboard() {
           })}
         </Row>
 
-        <div className="mt-5 text-center mb-4">
+        <div className="mt-5 text-center">
           <Button
             type="primary"
             style={{

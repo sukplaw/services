@@ -116,7 +116,7 @@ export default function Navbar() {
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav ms-auto align-items-center gap-2 gap-lg-3">
             {/* Notification */}
-            <li className="nav-item">
+            {/* <li className="nav-item">
               <button
                 className={`icon-pill ${
                   overdueCount > 0 ? "pill-danger pulse" : "pill-muted"
@@ -136,7 +136,7 @@ export default function Navbar() {
                   )}
                 </Badge>
               </button>
-            </li>
+            </li> */}
 
             {/* Date chip */}
             <li className="nav-item">

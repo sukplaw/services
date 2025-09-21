@@ -65,7 +65,6 @@ export default function CreateJobForm() {
   const [uploadedUrls, setUploadedUrls] = useState([]);
   const [fileList, setFileList] = useState([]);
 
-
   function showStatus() {
     let status = "เริ่มงาน";
     console.log("สถานะภายในฟังก์ชัน:", status);
@@ -815,6 +814,7 @@ export default function CreateJobForm() {
                     <InputNumber
                       prefix={<MdOutlineDescription />}
                       min={1}
+                      style={{ width: "100%" }}
                     />
                   </Form.Item>
 

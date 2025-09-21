@@ -307,7 +307,7 @@ export default function Profile() {
             )}
           </div>
         </div>
-        {saved && <div className="mt-2 small">✅ บันทึกข้อมูลเรียบร้อย</div>}
+        {/* {saved && <div className="mt-2 small">✅ บันทึกข้อมูลเรียบร้อย</div>} */}
       </div>
       <div className="row g-4">
         <div className="col-lg-4">

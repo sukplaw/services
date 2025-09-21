@@ -10,6 +10,7 @@
     "antd": "^5.27.1",
     "axios": "^1.11.0",
     "bootstrap": "^5.3.7",
+    "papaparse": "^5.5.3",
     "react": "^19.1.1",
     "react-apexcharts": "^1.7.0",
     "react-bootstrap": "^2.10.10",

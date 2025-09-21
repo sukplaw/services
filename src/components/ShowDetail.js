@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   Row,
   Col,
   Space,
   Dropdown,
-  Button,
   Form,
   Input,
   InputNumber,
@@ -52,6 +52,8 @@ import { TbBasketCancel } from "react-icons/tb";
 import Accordion from "react-bootstrap/Accordion";
 import { PiPackageFill } from "react-icons/pi";
 import dayjs from "dayjs";
+import { Modal, Button, Spinner } from "react-bootstrap";
+
 
 const { Dragger } = Upload;
 const { Option } = Select;
@@ -69,10 +71,15 @@ export default function ShowDetail() {
   const [editMode, setEditMode] = useState("none");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [changedStatus, setChangedStatus] = useState({});
+  const [modalShow, setModalShow] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteResult, setDeleteResult] = useState(null);
+
 
   const [customerForm] = Form.useForm();
   const [productForm] = Form.useForm();
   const [form] = Form.useForm();
+  const navigate = useNavigate()
 
   const getData = () => {
     const url = `http://localhost:3302/get-detail/${jobRef}`;
@@ -91,17 +98,23 @@ export default function ShowDetail() {
       });
   };
 
-  const deleteData = (jobRef) => {
-    const url = `http://localhost:3302/delete-job/${jobRef}`;
-    axios
-      .delete(url)
-      .then(() => {
-        message.success("ข้อมูลถูกลบเรียบร้อยแล้ว");
-      })
-      .catch((error) => {
-        message.error("เกิดข้อผิดพลาดในการลบข้อมูล");
-        console.error("Error deleting job:", error);
-      });
+  const deleteData = async () => {
+    setIsDeleting(true);
+    try {
+      const url = `http://localhost:3302/delete-job/${jobRef}`;
+      await axios.delete(url);
+      setDeleteResult("success");
+
+      // ✅ Redirect ไปหน้า home หลังจาก delay เล็กน้อย (ให้เห็นข้อความ "ลบสำเร็จ")
+      setTimeout(() => {
+        navigate("/job");
+      }, 1500); // 1.5 วินาที
+    } catch (err) {
+      console.error("Error deleting job:", err);
+      setDeleteResult("error");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const uploadProps = {
@@ -122,45 +135,45 @@ export default function ShowDetail() {
   };
 
   const onFinish = (values) => {
-  if (isSubmitting) return;  // ป้องกันส่งซ้ำ
-  setIsSubmitting(true);
+    if (isSubmitting) return;  // ป้องกันส่งซ้ำ
+    setIsSubmitting(true);
 
-  const jobRef = data[0]?.jobRef;
-  if (!jobRef) {
-    message.warning("ไม่พบ jobRef ที่จะอัปเดต");
-    setIsSubmitting(false);
-    return;
-  }
+    const jobRef = data[0]?.jobRef;
+    if (!jobRef) {
+      message.warning("ไม่พบ jobRef ที่จะอัปเดต");
+      setIsSubmitting(false);
+      return;
+    }
 
-  const jobData = {
-    remark: values.Remark,
-    images: uploadedUrls || [],
-    jobStatus: latestStatus || "",
+    const jobData = {
+      remark: values.Remark,
+      images: uploadedUrls || [],
+      jobStatus: latestStatus || "",
+    };
+
+    console.log("📤 ส่งไป backend:", {
+      jobRef,
+      body: jobData,
+    });
+
+    updateRemark(jobRef, jobData);
   };
 
-  console.log("📤 ส่งไป backend:", {
-    jobRef,
-    body: jobData,
-  });
-
-  updateRemark(jobRef, jobData);
-};
-
-const updateRemark = async (jobRef, jobData) => {
-  const url = `http://localhost:3302/update-remark/${jobRef}`;
-  try {
-    const res = await axios.put(url, jobData);
-    message.success("เพิ่มหมายเหตุและรูปภาพเพิ่มเติมสำเร็จ!");
-    console.log("Job updated successfully:", res.data);
-    form.resetFields();
-    getData();
-  } catch (error) {
-    message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
-    console.error("Error updating job:", error);
-  } finally {
-    setIsSubmitting(false);  // เปิดให้กดส่งใหม่ได้หลังจากทำงานเสร็จ
-  }
-};
+  const updateRemark = async (jobRef, jobData) => {
+    const url = `http://localhost:3302/update-remark/${jobRef}`;
+    try {
+      const res = await axios.put(url, jobData);
+      message.success("เพิ่มหมายเหตุและรูปภาพเพิ่มเติมสำเร็จ!");
+      console.log("Job updated successfully:", res.data);
+      form.resetFields();
+      getData();
+    } catch (error) {
+      message.error("เกิดข้อผิดพลาดในการบันทึกงาน!");
+      console.error("Error updating job:", error);
+    } finally {
+      setIsSubmitting(false);  // เปิดให้กดส่งใหม่ได้หลังจากทำงานเสร็จ
+    }
+  };
 
   useEffect(() => {
     getData();
@@ -311,33 +324,33 @@ const updateRemark = async (jobRef, jobData) => {
             )}
             {record.jobStatus !== "เริ่มงาน" &&
               record.images && record.images.length > 0 && (
-              <div>
-                <strong>รูปภาพ:</strong>
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 8,
-                    marginTop: 4,
-                  }}
-                >
-                  {record.images.filter(img => img.status === record.jobStatus) // ⬅️ เพิ่มการกรองตรงนี้
-                    .map((img, i) => (
-                      <img
-                        key={i}
-                        src={img.imageUrl}
-                        alt={`remark-${i}`}
-                        style={{
-                          width: "80px",
-                          height: "80px",
-                          objectFit: "cover",
-                          borderRadius: "4px",
-                        }}
-                      />
-                    ))}
+                <div>
+                  <strong>รูปภาพ:</strong>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 8,
+                      marginTop: 4,
+                    }}
+                  >
+                    {record.images.filter(img => img.status === record.jobStatus) // ⬅️ เพิ่มการกรองตรงนี้
+                      .map((img, i) => (
+                        <img
+                          key={i}
+                          src={img.imageUrl}
+                          alt={`remark-${i}`}
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
+                        />
+                      ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </>
         );
 
@@ -595,6 +608,61 @@ const updateRemark = async (jobRef, jobData) => {
     };
   }, []);
 
+  const handleClose = () => {
+    setDeleteResult(null);
+    setModalShow(false);
+  };
+
+//   const downloadCSV = async () => {
+//   const res = await axios.get("http://localhost:3302/export-jobs");
+//   const data = res.data;
+
+//   if (!data || data.length === 0) {
+//     alert("ไม่มีข้อมูล");
+//     return;
+//   }
+
+//   const convertToCSV = (arr) => {
+//     const header = Object.keys(arr[0]).join(",") + "\r\n";
+//     const rows = arr
+//       .map((obj) => Object.values(obj).map((val) => `"${val}"`).join(","))
+//       .join("\r\n");
+//     return header + rows;
+//   };
+
+//   const csv = convertToCSV(data);
+//   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+//   const url = URL.createObjectURL(blob);
+//   const link = document.createElement("a");
+//   link.href = url;
+//   link.setAttribute("download", "job-export.csv");
+//   document.body.appendChild(link);
+//   link.click();
+//   document.body.removeChild(link);
+// };
+
+
+const handleExportCSV = async () => {
+  try {
+    const res = await axios.get(`http://localhost:3302/export-detail/${jobRef}`, {
+      responseType: "blob", // สำคัญ! เพื่อรับไฟล์
+    });
+
+    // สร้าง URL และดาวน์โหลด
+    const blob = new Blob([res.data], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jobs_export.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("❌ Export failed:", err);
+    alert("Export ล้มเหลว");
+  }
+};
+
+
   return (
     <div style={{ padding: 16 }}>
       {/* Header */}
@@ -664,10 +732,74 @@ const updateRemark = async (jobRef, jobData) => {
               </div>
               <button
                 className="btn btn-danger d-flex align-items-center gap-2"
-                onClick={() => deleteData(jobRef)}
+                onClick={() => setModalShow(true)}
               >
                 <FaTrashAlt /> ลบข้อมูล
               </button>
+
+              <Modal show={modalShow} onHide={handleClose} centered>
+                <Modal.Body className="text-center">
+                  {!deleteResult && (
+                    <h5>
+                      คุณต้องการลบงานเลขที่ <strong>{jobRef}</strong> หรือไม่?
+                    </h5>
+                  )}
+                  {deleteResult === "success" && (
+                    <h5 className="text-success">
+                      ลบงานเลขที่ <strong>{jobRef}</strong> สำเร็จ
+                    </h5>
+                  )}
+                  {deleteResult === "error" && (
+                    <h5 className="text-danger">
+                      ลบข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง
+                    </h5>
+                  )}
+                </Modal.Body>
+                <Modal.Footer>
+                  {!deleteResult ? (
+                    <>
+                      <Button
+                        variant="warning"
+                        onClick={handleClose}
+                        disabled={isDeleting}
+                      >
+                        ยกเลิก
+                      </Button>
+                      <Button
+                        variant="danger"
+                        onClick={deleteData}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Spinner
+                              as="span"
+                              animation="border"
+                              size="sm"
+                              role="status"
+                              aria-hidden="true"
+                              className="me-2"
+                            />
+                            กำลังลบ...
+                          </>
+                        ) : (
+                          "ต้องการลบ"
+                        )}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="secondary" onClick={handleClose}>
+                      ปิด
+                    </Button>
+                  )}
+                </Modal.Footer>
+              </Modal>
+              {/* <button
+                className="btn btn-danger d-flex align-items-center gap-2"
+                onClick={() => deleteData(jobRef)}
+              >
+                <FaTrashAlt /> ลบข้อมูล
+              </button> */}
             </div>
           </div>
         </div>
@@ -900,8 +1032,8 @@ const updateRemark = async (jobRef, jobData) => {
                                       alt="Product"
                                       // className="gallery-img"
                                       className={`gallery-img ${activeKey === "product"
-                                          ? "is-active"
-                                          : ""
+                                        ? "is-active"
+                                        : ""
                                         }`}
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1265,6 +1397,7 @@ const updateRemark = async (jobRef, jobData) => {
                   borderRadius: 12,
                   fontWeight: 600,
                 }}
+                onClick={handleExportCSV}
               >
                 <FaDownload /> Export Data
               </button>
@@ -1290,6 +1423,9 @@ const updateRemark = async (jobRef, jobData) => {
     </div>
   );
 }
+
+
+
 
 
 

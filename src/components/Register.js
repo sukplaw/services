@@ -85,6 +85,16 @@ export default function Register() {
               </Form.Item>
 
               <Form.Item
+                name="username"
+                label="Username"
+                rules={[
+                  { required: true, message: "กรุณากรอก username" },
+                ]}
+              >
+                <Input placeholder="" allowClear />
+              </Form.Item>
+
+              <Form.Item
                 name="password"
                 label="Password"
                 rules={[
