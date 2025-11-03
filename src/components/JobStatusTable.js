@@ -83,36 +83,6 @@ export default function JobStatusTable() {
     return { percentRemaining, remainingDays, colorClass, labelText };
   };
 
-  //   useEffect(() => {
-  //     const fetchDataByStatus = async () => {
-  //       setLoading(true);
-  //       try {
-  //         // ดึงข้อมูลทั้งหมดจาก API
-  //         // *** ตรวจสอบ endpoint นี้ให้ดีว่ามีข้อมูลที่ถูกต้องหรือไม่
-  //         const response = await axios.get("http://localhost:3302/get-home");
-  //         const allJobs = response.data;
-
-  //         // **ขั้นตอนที่ 1: ตรวจสอบข้อมูลดิบที่ได้จาก API**
-  //         console.log("Data from API:", allJobs);
-
-  //         // กรองข้อมูลเฉพาะสถานะที่ตรงกับที่ผู้ใช้กดเข้ามา
-  //         const filteredJobs = allJobs.filter(
-  //           (job) => job.jobStatus === statusName
-  //         );
-
-  //         // **ขั้นตอนที่ 2: ตรวจสอบข้อมูลที่ถูกกรองแล้ว**
-  //         console.log("Filtered jobs for status:", statusName, filteredJobs);
-
-  //         setData(filteredJobs);
-  //       } catch (error) {
-  //         console.error("Error fetching data:", error);
-  //       } finally {
-  //         setLoading(false);
-  //       }
-  //     };
-
-  //     fetchDataByStatus();
-  //   }, [statusName]);
 
   const columns = [
     // ... your columns

@@ -66,27 +66,3 @@
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);
 }
 
-/* .page-title-gradient {
-  background: linear-gradient(90deg, #16a34aff, #f59e0b); 
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-} */
-
-/* .header-gradient-card {
-  background: linear-gradient(
-    90deg,
-    rgba(46, 52, 130, 1),
-    rgba(31, 82, 137, 1),
-    rgba(14, 116, 143, 1) 
-  ); 
-  border: 1px solid #e5e7eb;
-} */
-
-/* .ant-input:focus,
-.ant-input-focused,
-.ant-input-affix-wrapper-focused,
-.ant-input-number-focused {
-  box-shadow: 0 0 0 3px rgba(13, 146, 207, 0.15) !important; 
-  border-color: #0d92cf9c !important;
-} */
