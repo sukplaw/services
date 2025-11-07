@@ -39,7 +39,7 @@ export default function Profile() {
       }
 
       // ส่งคำขอ GET ไปที่ backend พร้อม token ใน Authorization header
-      const res = await axios.get("http://localhost:5000/profile", {
+      const res = await axios.get("http://localhost:3302/api/profile", {
         headers: {
           Authorization: `Bearer ${token}`, // ส่ง token ใน header
         },
@@ -104,9 +104,9 @@ export default function Profile() {
 
     try {
       // 2. ส่งไฟล์ไปที่เซิร์ฟเวอร์ multer ทันที
-      console.log("กำลังอัปโหลดรูปภาพไปที่ port 3303...");
+      console.log("กำลังอัปโหลดรูปภาพไปที่ port 3302...");
       const uploadRes = await axios.post(
-        "http://localhost:3303/upload",
+        "http://localhost:3302/api/images/upload",
         formData
       );
 
@@ -178,8 +178,8 @@ export default function Profile() {
     const dataToSend = { ...user };
 
     try {
-      console.log("กำลังบันทึกข้อมูลโปรไฟล์ไปที่ port 5000...");
-      const res = await axios.put("http://localhost:5000/profile", dataToSend, {
+      console.log("กำลังบันทึกข้อมูลโปรไฟล์ไปที่ port 3302...");
+      const res = await axios.put("http://localhost:3302/api/profile", dataToSend, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

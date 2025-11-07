@@ -28,7 +28,7 @@ export default function CreateProductForm() {
 
   // Fetches categories from the server
   const getCategories = () => {
-    const url = "http://localhost:3302/get-category";
+    const url = "http://localhost:3302/api/get-categories";
 
     axios
       .get(url)
@@ -47,7 +47,7 @@ export default function CreateProductForm() {
 
   // Handles creating a new category
   const onPostCategory = (values) => {
-    const url = "http://localhost:3302/create-category";
+    const url = "http://localhost:3302/api/categories";
     axios
       .post(url, values)
       .then(() => {
@@ -68,40 +68,67 @@ export default function CreateProductForm() {
 
   // Handles the main product form submission
   const onFinish = (values) => {
-    const fileList = values.image;
+  const fileList = values.image;
 
-    if (fileList && fileList.length > 0 && fileList[0].status === "done") {
-      const imageUrl = fileList[0].response.url;
-      const productData = { ...values, image: imageUrl };
+  // ดึง URL จากผลอัปโหลด (AntD Upload มีหลายรูปแบบ ต้องกัน null/undefined ไว้)
+  const imageUrl =
+    fileList?.[0]?.response?.url ||
+    fileList?.[0]?.url ||
+    fileList?.[0]?.thumbUrl ||
+    null;
 
-      fetch("http://localhost:3302/create-product", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productData),
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Network response was not ok");
-          return res.json();
-        })
-        .then(() => {
-          message.success("บันทึกข้อมูลสินค้าสำเร็จ!");
-          form.resetFields();
-          setOpenSuccess(true); // Show success modal
-        })
-        .catch((err) => {
-          message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูลสินค้า");
-          console.error("Error saving product:", err);
-        });
-    } else {
-      message.error("กรุณาอัปโหลดรูปภาพให้เรียบร้อยก่อนบันทึก");
-    }
+  if (!imageUrl) {
+    message.error("กรุณาอัปโหลดรูปภาพให้เรียบร้อยก่อนบันทึก");
+    return;
+  }
+
+  // ✅ แม็ปคีย์ให้ตรงกับ backend
+  const productData = {
+    productRef: values.productRef?.trim(),
+    product_name: values.product_name?.trim() ?? values.name?.trim(), // กันกรณีตั้งชื่อฟิลด์ว่า name
+    sku: values.sku ?? null,
+    pcs: values.pcs ?? null,
+    category: values.category ?? values.categoryId ?? null,
+    brand: values.brand ?? values.brandId ?? null,
+    description: values.description ?? values.desc ?? null,
+    image: imageUrl,
   };
+
+  // ตรวจ required ขั้นขั้นต่ำ
+  if (!productData.productRef || !productData.product_name) {
+    message.error("กรุณากรอก Product Ref และ Product Name ให้ครบ");
+    return;
+  }
+
+  fetch("http://localhost:3302/api/post-products", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(productData),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const text = await res.text(); // ดู error message จริงจาก backend
+        throw new Error(`${res.status} ${text}`);
+      }
+      return res.json();
+    })
+    .then(() => {
+      message.success("บันทึกข้อมูลสินค้าสำเร็จ!");
+      form.resetFields();
+      setOpenSuccess(true);
+    })
+    .catch((err) => {
+      message.error("เกิดข้อผิดพลาดในการบันทึกข้อมูลสินค้า");
+      console.error("Error saving product:", err);
+    });
+};
+
 
   // Props for the Ant Design Upload component
   const uploadProps = {
     name: "imageFile",
     multiple: false,
-    action: "http://localhost:3303/upload",
+    action: "http://localhost:3302/api/images/upload",
     listType: "picture",
     onChange(info) {
       if (info.file.status === "done") {

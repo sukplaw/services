@@ -8,6 +8,7 @@ import {
   Dropdown,
   Select,
   message,
+  Modal
 } from "antd";
 import Button from "react-bootstrap/Button";
 import { IoSearch } from "react-icons/io5";
@@ -17,7 +18,7 @@ import { MdEditDocument } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useState, useEffect } from "react";
-import Modal from "react-bootstrap/Modal";
+//import Modal from "react-bootstrap/Modal";
 import { IoMdCheckmarkCircle } from "react-icons/io";
 
 const { Option } = Select;
@@ -30,6 +31,9 @@ export default function Job() {
   const [changedStatus, setChangedStatus] = useState({});
   const [open, setOpen] = useState(false);
   const userRole = localStorage.getItem("permission") || sessionStorage.getItem("permission");
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState("");
+
 
   const rowClassName = (record) => {
     if (
@@ -43,12 +47,13 @@ export default function Job() {
 
   const getData = async () => {
     try {
-      const url = "http://localhost:3302/get-job";
+      const url = "http://localhost:3302/api/jobs";
       const response = await axios.get(url);
       const formattedData = response.data.map((item) => ({
         ...item,
         key: item.jobRef,
       }));
+      console.log('jobs response row 0:', response.data?.[0]);
       setData(formattedData);
       console.log(formattedData);
     } catch (error) {
@@ -115,7 +120,7 @@ export default function Job() {
         }
 
         return axios.put(
-          `http://localhost:3302/update-status/${jobRef}`,
+          `http://localhost:3302/api/status/${jobRef}`,
           {
             jobStatus: newStatus,
             latestUpdateBy: currentUser,
@@ -129,6 +134,7 @@ export default function Job() {
       });
 
       await Promise.all(updatePromises);
+      console.log("updatePromises:", updatePromises);
       message.success("สถานะทั้งหมดถูกอัปเดตเรียบร้อยแล้ว");
       await getData();
       setIsEditing(false);
@@ -212,6 +218,44 @@ export default function Job() {
       align: "center",
       sorter: (a, b) => a.jobRef.localeCompare(b.jobRef),
     },
+    {
+      title: "รูปภาพสินค้า",
+      dataIndex: "image",
+      key: "image",
+      align: "center",
+      render: (src) => {
+        if (!src) return <span className="text-muted">ไม่มีรูป</span>;
+
+        const base = process.env.REACT_APP_ASSET_BASE_URL || "";
+        const url = src.startsWith("http") ? src : `${base}${src}`;
+
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <img
+              src={url}
+              alt="product"
+              style={{
+                width: 60,
+                height: 60,
+                objectFit: "cover",
+                borderRadius: 8,
+                border: "1px solid #eee",
+                cursor: "zoom-in",
+              }}
+              onClick={() => {
+                setPreviewImage(url);
+                setPreviewVisible(true);
+              }}
+              onError={(ev) => {
+                ev.currentTarget.style.opacity = 0.4;
+                ev.currentTarget.title = "โหลดรูปไม่สำเร็จ";
+              }}
+            />
+          </div>
+        );
+      },
+    },
+
     {
       title: "สินค้า",
       dataIndex: "product_name",
@@ -489,6 +533,26 @@ export default function Job() {
               </span>
             </div>
           </div>
+
+          <Modal
+            open={previewVisible}
+            footer={null}
+            onCancel={() => setPreviewVisible(false)}
+            centered
+            width={800}
+            bodyStyle={{ padding: 0, textAlign: "center" }}
+          >
+            <img
+              alt="preview"
+              src={previewImage}
+              style={{
+                width: "100%",
+                height: "auto",
+                objectFit: "contain",
+                borderRadius: 8,
+              }}
+            />
+          </Modal>
 
           <div className="col-12 col-lg-4 order-1 order-lg-2">
             <Form.Item name="Input" className="m-0">

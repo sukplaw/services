@@ -12,7 +12,7 @@ export default function Backlogs() {
 
   // ---------- ดึงข้อมูล (คงแบบ test10 เดิม) ----------
   const getData = () => {
-    const url = "http://localhost:3302/get-job";
+    const url = "http://localhost:3302/api/jobs";
     axios
       .get(url)
       .then((response) => {

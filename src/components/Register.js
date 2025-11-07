@@ -15,10 +15,9 @@ import axios from "axios";
 const { Title, Text } = Typography;
 
 const ROLE_OPTIONS = [
-  { label: "superService", value: "superService" },
-  { label: "service", value: "service" },
-  { label: "admin", value: "admin" },
-  { label: "user", value: "user" },
+  { label: "Super Service", value: "super service" },
+  { label: "Service", value: "service" },
+  { label: "Admin", value: "admin" },
 ];
 
 export default function Register() {
@@ -27,9 +26,10 @@ export default function Register() {
 
   // ฟังก์ชัน submit
   const handleFinish = async (values) => {
+     console.log("values:", values);
     try {
       setSubmitting(true);
-      const res = await axios.post(`http://localhost:5000/register`, values);
+      const res = await axios.post(`http://localhost:3302/api/register`, values);
       message.success(res.data.message);
       form.resetFields();
       console.log(form.resetFields());

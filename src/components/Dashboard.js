@@ -177,7 +177,7 @@ export default function Dashboard() {
   const getData = async () => {
     setLoading(true);
     try {
-      const url = "http://localhost:3302/get-dashboard";
+      const url = "http://localhost:3302/api/dashboard";
       const response = await axios.get(url);
       setData(response.data || []);
     } catch (error) {
@@ -187,7 +187,6 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
-
   // -------------------- Compute --------------------
   const filterAndCount = () => {
     if (!data?.length) {
@@ -375,15 +374,15 @@ export default function Dashboard() {
               dateType === "day"
                 ? "DD MMM YYYY"
                 : dateType === "month"
-                ? "MMM YYYY"
-                : "YYYY"
+                  ? "MMM YYYY"
+                  : "YYYY"
             }
             placeholder={
               dateType === "day"
                 ? "เลือกวันที่"
                 : dateType === "month"
-                ? "เลือกเดือน"
-                : "เลือกปี"
+                  ? "เลือกเดือน"
+                  : "เลือกปี"
             }
             style={{ minWidth: 160 }}
           />

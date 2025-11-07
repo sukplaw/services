@@ -105,7 +105,7 @@ export default function CreateJobForm() {
   };
 
   const getDataProduct = () => {
-    const url = "http://localhost:3302/get-product";
+    const url = "http://localhost:3302/api/get-product";
     axios
       .get(url)
       .then((res) => {
@@ -118,7 +118,7 @@ export default function CreateJobForm() {
   };
 
   const getDataCustomer = () => {
-    const url = "http://localhost:3302/get-customer";
+    const url = "http://localhost:3302/api/customers";
     axios
       .get(url)
       .then((res) => {
@@ -165,7 +165,7 @@ export default function CreateJobForm() {
   // };
 
   const createJob = (data) => {
-    const url = "http://localhost:3302/create-job";
+    const url = "http://localhost:3302/api/jobs";
     axios
       .post(url, data)
       .then((res) => {
@@ -565,7 +565,7 @@ export default function CreateJobForm() {
   const uploadProps = {
     name: "imageFile",
     multiple: true,
-    action: "http://localhost:3303/upload",
+    action: "http://localhost:3302/api/images/upload",
     listType: "picture",
     fileList: fileList, // ✅ ให้ Upload ใช้ fileList จาก state
 
@@ -755,7 +755,7 @@ export default function CreateJobForm() {
                     label="สถานะ"
                     rules={[{ required: true }]}
                   >
-                    <Input prefix={<MdOutlineWorkOutline />} disabled={true} />
+                    <Input prefix={<MdOutlineWorkOutline />} readOnly />
                   </Form.Item>
                   <Form.Item name="serialNumber" label="Serial Number" rules={[{ required: true }, { type: "string" }]}>
                     <Input prefix={<MdOutlineWorkOutline />} />

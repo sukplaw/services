@@ -10,7 +10,7 @@ export default function JobStatusTable() {
   const navigate = useNavigate();
 
   const getData = () => {
-    const url = `http://localhost:3302/get-job/${jobStatus}`;
+    const url = `http://localhost:3302/api/jobs/status/${jobStatus}`;
 
     axios
       .get(url)

@@ -82,7 +82,7 @@ export default function ShowDetail() {
   const navigate = useNavigate()
 
   const getData = () => {
-    const url = `http://localhost:3302/get-detail/${jobRef}`;
+    const url = `http://localhost:3302/api/get-detail/${jobRef}`;
     axios
       .get(url)
       .then((response) => {
@@ -101,7 +101,7 @@ export default function ShowDetail() {
   const deleteData = async () => {
     setIsDeleting(true);
     try {
-      const url = `http://localhost:3302/delete-job/${jobRef}`;
+      const url = `http://localhost:3302/api/jobs/${jobRef}`;
       await axios.delete(url);
       setDeleteResult("success");
 
@@ -120,7 +120,7 @@ export default function ShowDetail() {
   const uploadProps = {
     name: "imageFile",
     multiple: false,
-    action: "http://localhost:3303/upload",
+    action: "http://localhost:3302/api/images/upload",
     listType: "picture",
     onChange(info) {
       const { status } = info.file;
@@ -161,7 +161,7 @@ export default function ShowDetail() {
   };
 
   const updateRemark = async (jobRef, jobData) => {
-    const url = `http://localhost:3302/update-remark/${jobRef}`;
+    const url = `http://localhost:3302/api/remark/${jobRef}`;
     try {
       const res = await axios.put(url, jobData);
       message.success("เพิ่มหมายเหตุและรูปภาพเพิ่มเติมสำเร็จ!");
@@ -474,35 +474,61 @@ export default function ShowDetail() {
     }
   };
 
-  const handleConfirmStatus = async () => {
-    try {
-      const updatePromises = Object.keys(changedStatus).map((jobRef) => {
-        const newStatus = changedStatus[jobRef];
-        const token =
-          localStorage.getItem("token") || sessionStorage.getItem("token");
-        if (!nextOptions.includes(newStatus)) {
-          message.error("ไม่สามารถข้ามลำดับสถานะได้");
-          throw new Error("Invalid status transition");
-        }
-        return axios.put(
-          `http://localhost:3302/update-status/${jobRef}`,
-          { jobStatus: newStatus },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      });
+const handleConfirmStatus = async () => {
+  try {
+    const updatePromises = Object.keys(changedStatus).map((jobRef) => {
+      const newStatus = changedStatus[jobRef];
+      const currentUser = localStorage.getItem("username") || "unknown";
 
-      await Promise.all(updatePromises);
-      message.success("สถานะถูกอัปเดตเรียบร้อยแล้ว");
-      await getData();
-      setEditMode("none");
-      setChangedStatus({});
-    } catch (error) {
-      if (error?.message !== "Invalid status transition") {
-        message.error("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
+      // ดึง "JWT" ที่แท้จริง (แก้ชื่อคีย์ให้ตรงกับตอน login ของโปรเจกต์คุณ)
+      const jwtToken =
+        localStorage.getItem("accessToken") ||
+        sessionStorage.getItem("accessToken") ||
+        localStorage.getItem("token") ||
+        sessionStorage.getItem("token") ||
+        ""; // fallback ว่าง
+
+      // ป้องกันการส่ง header ผิดรูปแบบ
+      const isJwt = typeof jwtToken === "string" && jwtToken.split(".").length === 3;
+      if (!isJwt) {
+        message.error("ยังไม่ได้ล็อกอินหรือโทเค็นไม่ถูกต้อง");
+        throw new Error("JWT missing or malformed");
       }
-      console.error("Failed to update status:", error);
+
+      if (!nextOptions.includes(newStatus)) {
+        message.error("ไม่สามารถข้ามลำดับสถานะได้");
+        throw new Error("Invalid status transition");
+      }
+
+      return axios.put(
+        `http://localhost:3302/api/status/${jobRef}`,
+        {
+          jobStatus: newStatus,
+          latestUpdateBy: currentUser,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            // ถ้าต้องการส่งสิทธิ์/บทบาท ให้ส่ง header แยก (ห้ามปน Authorization)
+            // 'X-Permission': localStorage.getItem('permission') || 'user'
+          },
+          // withCredentials: true, // ถ้าใช้ httpOnly cookie
+        }
+      );
+    });
+
+    await Promise.all(updatePromises);
+    message.success("สถานะถูกอัปเดตเรียบร้อยแล้ว");
+    await getData();
+    setEditMode("none");
+    setChangedStatus({});
+  } catch (error) {
+    if (error?.message !== "Invalid status transition") {
+      message.error("เกิดข้อผิดพลาดในการอัปเดตสถานะ");
     }
-  };
+    console.error("Failed to update status:", error);
+  }
+};
 
   const handleCancelEditAll = () => {
     setEditMode("none");
@@ -544,7 +570,7 @@ export default function ShowDetail() {
         return;
       }
       await axios.put(
-        `http://localhost:3302/update-customer/${customerRef}`,
+        `http://localhost:3302/api/customers/${customerRef}`,
         values
       );
       message.success("บันทึกข้อมูลลูกค้าเรียบร้อยแล้ว");
@@ -565,7 +591,7 @@ export default function ShowDetail() {
         return;
       }
       await axios.put(
-        `http://localhost:3302/update-product/${productRef}`,
+        `http://localhost:3302/api/products/${productRef}`,
         values
       );
       message.success("บันทึกข้อมูลสินค้าเรียบร้อยแล้ว");
@@ -627,7 +653,7 @@ export default function ShowDetail() {
 
   const handleExportCSV = async () => {
     try {
-      const res = await axios.get(`http://localhost:3302/export-detail/${jobRef}`, {
+      const res = await axios.get(`http://localhost:3302/api/detail/${jobRef}/export`, {
         responseType: "blob", // สำคัญ! เพื่อรับไฟล์
       });
 

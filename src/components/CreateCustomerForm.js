@@ -27,7 +27,7 @@ export default function CreateCustomerForm() {
   const onPost = async (data) => {
     try {
       await form.validateFields(); // เช็คว่ากรอกครบ
-      const url = "http://localhost:3302/create-customers";
+      const url = "http://localhost:3302/api/customers";
       await axios.post(url, data); // POST สำเร็จ
 
       form.resetFields();

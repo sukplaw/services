@@ -18,6 +18,17 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [overdueCount, setOverdueCount] = useState(0);
 
+  // ถ้า backend เก็บเฉพาะชื่อไฟล์ ให้แปลงเป็น URL เต็ม
+  const apiBase = process.env.REACT_APP_API_BASE || "http://localhost:3302";
+  const toAbsoluteImageUrl = (val) => {
+    if (!val) return "";
+    // ถ้าเป็น full URL หรือ path เริ่มด้วย / ให้คืนค่าให้ถูกต้อง
+    if (/^https?:\/\//i.test(val)) return val;
+    if (val.startsWith("/")) return `${apiBase}${val}`;
+    // คาดว่าเก็บเป็นชื่อไฟล์ -> serve จาก /uploads
+    return `${apiBase}/uploads/${val}`;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -27,17 +38,18 @@ export default function Navbar() {
         if (!token) return;
 
         // ดึง profile
-        const profileRes = await axios.get("http://localhost:5000/profile", {
+        const profileRes = await axios.get("http://localhost:3302/api/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         const userFromApi = profileRes.data.user;
         setRole(userFromApi.role || "Guest");
         setServiceRef(userFromApi.serviceRef || "Guest");
-        setImageUrl(userFromApi.service_image || ""); // <-- เพิ่มบรรทัดนี้
+        // แปลงเป็น URL เต็มก่อนใช้งาน
+        setImageUrl(toAbsoluteImageUrl(userFromApi.service_image || ""));
 
         // ดึงงานทั้งหมดจาก /get-job
-        const jobRes = await axios.get("http://localhost:3302/get-job");
+        const jobRes = await axios.get("http://localhost:3302/api/jobs");
 
         const jobs = jobRes.data || [];
 

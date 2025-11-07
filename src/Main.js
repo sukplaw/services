@@ -9,12 +9,12 @@ import Dashboard from "./components/Dashboard";
 import CreateProductForm from "./components/CreateProductForm";
 import CreateJobForm from "./components/CreateJobForm";
 import Backlogs from "./components/Backlogs";
-import Edit from "./components/Edit";
 import ShowDetail from "./components/ShowDetail";
 import NavProfileLinkBridge from "./components/NavProfileLinkBridge";
 import Profile from "./components/Profile";
 import Register from "./components/Register";
 import JobStatusTable from "./components/JobStatusTable";
+import ManageUser from "./components/ManageUser";
 
 const Main = () => {
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -44,13 +44,11 @@ const Main = () => {
               <Route path="create-product" element={<CreateProductForm />} />
               <Route path="create-job" element={<CreateJobForm />} />
               <Route path="show-job/:jobRef" element={<ShowDetail />} />
-              <Route path="show-customer" element={<Edit />} />
               <Route path="profile" element={<Profile />} />
               <Route path="register" element={<Register/>} />
-              <Route
-                path="jobs-by-status/:jobStatus"
-                element={<JobStatusTable />}
-              />
+              <Route path="jobs-by-status/:jobStatus" element={<JobStatusTable />} />
+              <Route path="manage-user" element={<ManageUser />} />
+
             </Routes>
           </div>
         </div>
